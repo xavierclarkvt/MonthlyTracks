@@ -170,7 +170,7 @@ class MonthlyPlaylists:
 
     def __fetch_new_saved_songs(self):
         """Returns list of songs that were added after the last_date checked."""
-
+        print(self.saved_songs)
         return [song for song in self.saved_songs if song.added_at > self.last_checked]
 
     def __add_songs_to_playlist(self, songs: List[Song]) -> bool:
