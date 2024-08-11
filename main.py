@@ -96,7 +96,7 @@ class MonthlyPlaylists:
 
     def __init__(self, client_id: str, client_secret: str,
                  redirect_uri: str = '',
-                 date: datetime = None, name_format: str = '\'%y %b', headless: bool = False) -> None:
+                 date: datetime = None, name_format: str = '\'%y %B', headless: bool = False) -> None:
         self.sp = spotipy.Spotify(
             auth_manager=SpotifyOAuth(
                 client_id=client_id,
