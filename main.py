@@ -5,6 +5,9 @@ from typing import Optional, List
 from spotipy import Spotify
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Song:
     """Stores relevant data for a song retrieved from spotify's API.
@@ -165,7 +168,7 @@ class MonthlyPlaylists:
             return False
         if 'items' not in results:
             return False
-        self.playlists = [Playlist(self.sp, x) for x in results['items']]
+        self.playlists = [Playlist(self.sp, x) for x in filter(None, results['items'])]
         return True
 
     def __fetch_new_saved_songs(self):
