@@ -1,0 +1,10 @@
+{
+  "name": "spotify-monthly-saves",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "bun run main.js",
+    "bootstrap-token": "bun run src/bootstrap-refresh-token.js",
+    "test": "bun test"
+  }
+}

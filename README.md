@@ -1,94 +1,112 @@
+# spotify monthly saves
+
+Manual Bun CLI that mirrors the old Spotipy script: it reads your liked songs, finds only the songs newer than a saved threshold, creates or reuses month playlists, skips duplicates already in those playlists, and adds tracks in chronological month order.
+
+## Runtime
+
+- Bun 1.2+
+- No runtime dependencies beyond Bun's built-ins
+- Spotify app credentials and a user refresh token
+
+## Environment variables
+
+Required:
+
+- `CLIENT_ID`
+- `CLIENT_SECRET`
+- `SPOTIFY_REFRESH_TOKEN`
+
+Optional:
+
+- `PLAYLIST_NAME_FORMAT`: playlist naming pattern. Default: `%b '%y` which yields names like `May '26`.
+- `LAST_CHECKED`: ISO-8601 timestamp override for the sync threshold. If set, it wins over the state file.
+- `STATE_FILE`: local JSON state path. Default: `.spotify-monthly-saves-state.json` in the repo root.
+- `DRY_RUN`: set to `1` or `true` to preview changes without creating playlists or adding tracks.
+- `SPOTIFY_REDIRECT_URI`: only used by the bootstrap helper. Default: `http://127.0.0.1:3000/callback`.
+
+Bun loads `.env` automatically, so copying `.env.example` to `.env` is enough for local runs.
+
+## Spotify app setup
+
+1. Create an app in the Spotify developer dashboard.
+2. Add a redirect URI that matches `SPOTIFY_REDIRECT_URI`. The default in this repo is `http://127.0.0.1:3000/callback`.
+3. Copy the app's client ID and client secret into `.env`.
+
+## One-time refresh token bootstrap
+
+The main sync script does not run a browser OAuth flow. Instead, use the helper once to mint a refresh token and then keep that refresh token in `.env`.
+
+1. Set `CLIENT_ID`, `CLIENT_SECRET`, and optionally `SPOTIFY_REDIRECT_URI`.
+2. Run:
+
+```sh
+bun run bootstrap-token
 ```
- ___ _ __   ___ | |_(_)/ _|_   _ 
-/ __| '_ \ / _ \| __| | |_| | | |
-\__ \ |_) | (_) | |_| |  _| |_| |
-|___/ .__/ \___/ \__|_|_|  \__, |
-    |_|                _   |___/ _
- _ __ ___   ___  _ __ | |_| |__ | |_   _ 
-| '_ ` _ \ / _ \| '_ \| __| '_ \| | | | |
-| | | | | | (_) | | | | |_| | | | | |_| |
-|_| |_| |_|\___/|_| |_|\__|_| |_|_|\__, |
-       _             _ _     _     |___/ 
- _ __ | | __ _ _   _| (_)___| |_ ___ 
-| '_ \| |/ _` | | | | | / __| __/ __|
-| |_) | | (_| | |_| | | \__ \ |_\__ \
-| .__/|_|\__,_|\__, |_|_|___/\__|___/
-|_|            |___/                 
+
+3. Open the printed Spotify authorization URL.
+4. Approve the requested scopes.
+5. Copy the full redirected URL from the browser address bar.
+6. Exchange it for a refresh token:
+
+```sh
+bun run bootstrap-token --callback-url "http://127.0.0.1:3000/callback?code=..."
 ```
 
-### 🧐 What is this?
-The songs you add to your library or give a like to will be included in a monthly playlist (e.g., "Jun '23"), enabling you to revisit and discover the songs you liked 7 months ago during a memorable road trip.
+7. Copy the printed value into `SPOTIFY_REFRESH_TOKEN` in `.env`.
 
-Like this:
+The requested scopes are:
 
-<img width="280" alt="results" src="https://github.com/tejxv/spotify-monthly-saves/assets/54097365/3e18937d-5937-4f3d-bf00-64c7380eb61d">
+- `user-library-read`
+- `playlist-read-private`
+- `playlist-modify-private`
+- `playlist-modify-public`
 
+## Run the sync
 
-### 🗿 Why not [IFTTT](https://ifttt.com/applets/rC5QtGu6-add-saved-songs-to-a-monthly-playlist)?
-I have been using that for years, but recently they paywalled it. 🥲
-### ✨ How does it work?
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github-production-user-asset-6210df.s3.amazonaws.com/54097365/244024820-29c2cff5-84ec-45e5-b6ad-b5447c2494d4.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://github-production-user-asset-6210df.s3.amazonaws.com/54097365/244024165-45dac8e5-66cd-44a0-9284-8d8881938000.svg">
-  <img alt="working illustration" src="https://user-images.githubusercontent.com/25423296/163456779-a8556205-d0a5-45e2-ac17-42d089e3c3f8.png">
-</picture>
-
-
-### ⚙️ How do I set it up?
-
-To set up the repository and configure the necessary steps, follow these instructions:
-
-0. Make sure you have a GitHub account. If you don't have one, create an account at [github.com/signup](https://github.com/signup).
-
-1. Fork this repository by clicking the "Fork" button at the top right of the repository page. This will create a copy of the repository under your GitHub account.
-
-2. Obtain your `client_id` and `client_secret` from the Spotify Developer Dashboard:
-
-   - Visit [developer.spotify.com](https://developer.spotify.com/) and log in with your Spotify account.
-   - Navigate to your [Dashboard.](https://developer.spotify.com/dashboard)
-   - Create a new app by clicking the "Create App" button.
-   - Provide a name and description for your app (you can use any name and description).
-   - In the Redirect URI field, enter `http://localhost:3000` and click "Save".
-   - Open the settings of your app and copy the `client_id` and `client_secret` to a notepad or any text editor. You will need these in the next steps.
-
-3. Before proceeding, make sure you have run the `main.py` file locally with your `client_id` and `client_secret` to authenticate your secret credentials. This step gives the necessary permissions to the app you created, allowing it to modify and create new playlists.
-
-    - Open fork in VS Code
-    - ⚠︎ Delete ``.cache`` file (spotify-monthly-saves/.cache)
-    - Run ``pip install spotipy``
-    - Run the code by pressing <kbd>Control</kbd> + <kbd>Option</kbd> + <kbd>N</kbd> (<kbd>Control</kbd> + <kbd>Alt</kbd> + <kbd>N</kbd> on Windows)
-    - A window will pop up asking you to Authorise the Spotify app, click authorise.
-4. Go to the "Settings" tab of your forked repository on GitHub, and navigate to "Secrets and variables" > "Actions".
-
-5. Add both the `client_id` and `client_secret` keys as secrets by clicking on "New repository secret" and entering the respective values.
-
-6. Next, enable the workflow under the "Actions" tab by clicking the "I understand my workflows, go ahead and enable them" button. This will allow the automated process to run.
-
-7. Additionally, enable the workflow under the sidebar menu called "Run main.py" by clicking the "Enable workflow" button.
-
-8. Please note that the song you like on Spotify won't be instantly added to the monthly playlist. The GitHub action runs at an interval of approximately 15 minutes, so there might be a slight delay before the song gets added.
-
-9. Once the setup is complete, you can continue to like songs on Spotify, and they will be automatically added to a new monthly playlist during the next execution of the GitHub action.
-
-10. Profit.
-
-### 🧮 Customization
-
-You have the flexibility to customize the interval at which the GitHub Action runs by modifying the `- cron:` parameter in the `.github/workflows/actions.yml` file. The interval is set using the cron syntax.
-
-Cron syntax consists of five fields representing different time units: minute, hour, day of the month, month, and day of the week. Each field can contain specific values or special characters to define the schedule.
-
-To modify the interval, locate the following line in the `.github/workflows/actions.yml` file:
-
-```yaml
-- cron: '*/15 * * * *'
+```sh
+bun run sync
 ```
-> this runs every 15 minutes
 
-The `* * * * *` represents the default configuration, which executes the workflow every minute. You can change this to your desired schedule. Refer to [crontab.guru](https://crontab.guru/). It provides a simple and intuitive way to understand and create cron schedules.
+On each successful run the script writes the newest processed liked-song timestamp to `.spotify-monthly-saves-state.json`. Re-running uses that value to minimize Spotify API calls.
 
+Threshold precedence is:
 
-### 💰 Is this FREE?
-Yes.
+1. `LAST_CHECKED`
+2. `STATE_FILE` contents
+3. Start of the current UTC month
 
+## Behavior notes
 
+- Saved tracks are fetched iteratively in pages of 50 until the threshold is crossed.
+- Playlists are fetched with pagination.
+- Playlist tracks are fetched with pagination before duplicate checks.
+- `429 Retry-After` responses are retried automatically.
+- `401` responses trigger one access-token refresh and retry.
+- Tracks are added in chronological order within each month playlist.
+
+## Tests
+
+```sh
+bun test
+```
+
+Current automated coverage is intentionally lightweight and focuses on pure logic:
+
+- playlist naming
+- new-song filtering
+- chronological month grouping
+- default threshold calculation
+
+## Manual verification checklist
+
+1. Run `bun run sync` with a test or real Spotify account and confirm it creates the expected month playlist and adds only unsynced liked songs.
+2. Run it again immediately and confirm it prints `No new songs` or only reports duplicates, with no new inserts.
+3. Test with liked songs spanning at least two months and confirm they land in the correct playlist names.
+4. Validate pagination with more than 50 liked songs and more than 100 tracks in a target playlist.
+5. Delete or edit the state file and confirm threshold behavior matches `LAST_CHECKED` or the persisted timestamp you expect.
+
+## Non-goals in this migration
+
+- GitHub Actions automation was not migrated in this change.
+- No external OAuth client library was added.
+- No browser app or callback server is included.
