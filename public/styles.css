@@ -1,0 +1,244 @@
+:root {
+  color-scheme: light;
+  --bg: #f4efe7;
+  --bg-accent: #e3d5c2;
+  --panel: rgba(255, 251, 245, 0.86);
+  --border: rgba(37, 30, 20, 0.12);
+  --text: #221b13;
+  --muted: #685847;
+  --accent: #0f8f5b;
+  --accent-strong: #0a6b43;
+  --shadow: 0 30px 60px rgba(34, 27, 19, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Space Grotesk", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 35%),
+    linear-gradient(135deg, var(--bg) 0%, #efe4d5 45%, var(--bg-accent) 100%);
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: auto;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(16px);
+}
+
+body::before {
+  width: 18rem;
+  height: 18rem;
+  top: 3rem;
+  right: -4rem;
+  background: rgba(15, 143, 91, 0.2);
+}
+
+body::after {
+  width: 16rem;
+  height: 16rem;
+  bottom: 2rem;
+  left: -3rem;
+  background: rgba(197, 133, 62, 0.18);
+}
+
+.shell {
+  width: min(72rem, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 3rem 0 4rem;
+}
+
+.hero,
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.hero {
+  padding: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 1rem;
+  color: var(--accent-strong);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+dt,
+pre {
+  margin: 0;
+}
+
+h1 {
+  max-width: 11ch;
+  font-size: clamp(2.8rem, 7vw, 5.4rem);
+  line-height: 0.96;
+  letter-spacing: -0.05em;
+}
+
+.lede,
+.panel-header p,
+.details p,
+.message {
+  color: var(--muted);
+}
+
+.lede {
+  max-width: 52rem;
+  margin-top: 1.25rem;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.sync-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.95rem 1.4rem;
+  font: inherit;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+  box-shadow: 0 12px 24px rgba(15, 143, 91, 0.24);
+}
+
+.sync-button:hover:enabled {
+  transform: translateY(-1px);
+}
+
+.sync-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.status-pill {
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(34, 27, 19, 0.08);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.status-pill[data-state="running"] {
+  background: rgba(197, 133, 62, 0.18);
+}
+
+.status-pill[data-state="success"] {
+  background: rgba(15, 143, 91, 0.18);
+}
+
+.status-pill[data-state="error"] {
+  background: rgba(177, 51, 46, 0.16);
+}
+
+.panel {
+  padding: 2rem;
+}
+
+.panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.stats div,
+.details > div {
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(37, 30, 20, 0.08);
+}
+
+dt {
+  color: var(--muted);
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+dd {
+  margin-top: 0.45rem;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 700;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.message {
+  min-height: 6rem;
+  white-space: pre-wrap;
+  font: inherit;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .shell {
+    width: min(100vw - 1rem, 72rem);
+    padding: 1rem 0 2rem;
+  }
+
+  .hero,
+  .panel {
+    padding: 1.25rem;
+    border-radius: 1.15rem;
+  }
+
+  .stats,
+  .details {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,6 +1,6 @@
 # spotify monthly saves
 
-Manual Bun CLI that mirrors the old Spotipy script: it reads your liked songs, finds only the songs newer than a saved threshold, creates or reuses month playlists, skips duplicates already in those playlists, and adds tracks in chronological month order.
+Manual Bun CLI plus a lightweight Bun web server: both entrypoints read your liked songs, find only the songs newer than a saved threshold, create or reuse month playlists, skip duplicates already in those playlists, and add tracks in chronological month order.
 
 ## Runtime
 
@@ -61,11 +61,15 @@ The requested scopes are:
 - `playlist-modify-private`
 - `playlist-modify-public`
 
-## Run the sync
+## Run the web UI
 
 ```sh
-bun run sync
+bun run start
 ```
+
+Then open `http://127.0.0.1:3000` and click `Sync Now`.
+
+The Phase 1 web server uses the exact same `.env` values and local state file as the CLI entrypoint, so the browser button and `bun run sync` stay in sync.
 
 On each successful run the script writes the newest processed liked-song timestamp to `.spotify-monthly-saves-state.json`. Re-running uses that value to minimize Spotify API calls.
 
@@ -104,6 +108,7 @@ Current automated coverage is intentionally lightweight and focuses on pure logi
 3. Test with liked songs spanning at least two months and confirm they land in the correct playlist names.
 4. Validate pagination with more than 50 liked songs and more than 100 tracks in a target playlist.
 5. Delete or edit the state file and confirm threshold behavior matches `LAST_CHECKED` or the persisted timestamp you expect.
+6. Run `bun run start`, load `http://127.0.0.1:3000`, and confirm clicking `Sync Now` shows the latest songs found, added, and skipped counts.
 
 ## Non-goals in this migration
 
