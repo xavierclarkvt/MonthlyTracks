@@ -6,14 +6,5 @@
 node_modules/
 
 # State and caches
-.cache/
-.spotify-monthly-saves-state.json
-
-# Python leftovers
-__pycache__/
-*.py[cod]
-*$py.class
-venv/
-.venv/
-env/
-ENV/
+data/*
+!data/.gitkeep

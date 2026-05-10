@@ -19,10 +19,8 @@ Required:
 Optional:
 
 - `PLAYLIST_NAME_FORMAT`: playlist naming pattern. Default: `%b '%y` which yields names like `May '26`.
-- `LAST_CHECKED`: ISO-8601 timestamp override for the sync threshold. If set, it wins over the state file.
-- `STATE_FILE`: local JSON state path. Default: `.spotify-monthly-saves-state.json` in the repo root.
-- `DRY_RUN`: set to `1` or `true` to preview changes without creating playlists or adding tracks.
 - `SPOTIFY_REDIRECT_URI`: only used by the bootstrap helper. Default: `http://127.0.0.1:3000/callback`.
+- `COOKIE_SECRET`: required for encrypted refresh-token storage in SQLite.
 
 Bun loads `.env` automatically, so copying `.env.example` to `.env` is enough for local runs.
 
@@ -69,14 +67,16 @@ bun run start
 
 Then open `http://127.0.0.1:3000` and click `Sync Now`.
 
-The Phase 1 web server uses the exact same `.env` values and local state file as the CLI entrypoint, so the browser button and `bun run sync` stay in sync.
+The current pre-OAuth sync path still uses `.env` Spotify credentials, but its checkpoint now lives in SQLite instead of a JSON state file.
 
-On each successful run the script writes the newest processed liked-song timestamp to `.spotify-monthly-saves-state.json`. Re-running uses that value to minimize Spotify API calls.
+On startup, the server also creates `data/spotify-monthly-saves.db` and ensures the `users` and `sync_history` tables exist for the multi-user phases.
+
+Before Phase 3 OAuth exists, the sync route uses the Spotify account behind `SPOTIFY_REFRESH_TOKEN` as the row key in `users`, stores the encrypted refresh token there, and persists `last_checked` in SQLite. Re-running uses that value to minimize Spotify API calls.
 
 Threshold precedence is:
 
 1. `LAST_CHECKED`
-2. `STATE_FILE` contents
+2. `users.last_checked`
 3. Start of the current UTC month
 
 ## Behavior notes
@@ -100,6 +100,7 @@ Current automated coverage is intentionally lightweight and focuses on pure logi
 - new-song filtering
 - chronological month grouping
 - default threshold calculation
+- SQLite schema initialization and refresh-token encryption helpers
 
 ## Manual verification checklist
 
@@ -107,7 +108,7 @@ Current automated coverage is intentionally lightweight and focuses on pure logi
 2. Run it again immediately and confirm it prints `No new songs` or only reports duplicates, with no new inserts.
 3. Test with liked songs spanning at least two months and confirm they land in the correct playlist names.
 4. Validate pagination with more than 50 liked songs and more than 100 tracks in a target playlist.
-5. Delete or edit the state file and confirm threshold behavior matches `LAST_CHECKED` or the persisted timestamp you expect.
+5. Inspect the `users.last_checked` value in SQLite and confirm threshold behavior matches `LAST_CHECKED` or the persisted timestamp you expect.
 6. Run `bun run start`, load `http://127.0.0.1:3000`, and confirm clicking `Sync Now` shows the latest songs found, added, and skipped counts.
 
 ## Non-goals in this migration

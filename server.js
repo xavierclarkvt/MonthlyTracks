@@ -1,10 +1,12 @@
 import { isAbsolute, normalize, relative, resolve } from "node:path";
+import { initializeDatabase } from "./src/db.js";
 import { createRouter } from "./src/router.js";
 import { runMonthlySync } from "./src/run-sync.js";
 
 const HOST = process.env.HOST?.trim() || "127.0.0.1";
 const PORT = Number(process.env.PORT ?? 3000);
 const publicRoot = resolve(process.cwd(), "public");
+const database = await initializeDatabase();
 
 function json(data, init = {}) {
   const headers = new Headers(init.headers);
@@ -54,7 +56,7 @@ const router = createRouter([
     pathname: "/api/sync",
     async handler() {
       try {
-        const { config, result } = await runMonthlySync();
+        const { config, result } = await runMonthlySync({ database });
 
         return json({
           ok: true,
@@ -67,8 +69,6 @@ const router = createRouter([
             added: result.added,
             skipped: result.skipped,
             lastChecked: result.lastChecked?.toISOString() ?? null,
-            dryRun: config.dryRun,
-            statePath: config.statePath,
           },
         });
       } catch (error) {
@@ -104,4 +104,5 @@ const server = Bun.serve({
   },
 });
 
+console.log(`SQLite database ready at ${database.databasePath}`);
 console.log(`Server listening on http://${server.hostname}:${server.port}`);

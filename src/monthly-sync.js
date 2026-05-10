@@ -2,7 +2,6 @@ import {
   filterNewSongs,
   getNewestSongTimestamp,
   groupSongsByPlaylistName,
-  writeState,
 } from "./sync-helpers.js";
 
 function chunk(items, size) {
@@ -34,7 +33,7 @@ class Playlist {
     );
   }
 
-  async addSongs(songs, { dryRun = false, log = console.log } = {}) {
+  async addSongs(songs, { log = console.log } = {}) {
     await this.ensureSongIdsLoaded();
 
     const songsToAdd = [];
@@ -54,11 +53,6 @@ class Playlist {
       return { added: 0, skipped };
     }
 
-    if (dryRun) {
-      log(`DRY_RUN would add ${songsToAdd.length} song(s) to ${this.name}`);
-      return { added: songsToAdd.length, skipped };
-    }
-
     for (const batch of chunk(songsToAdd, 100)) {
       await this.client.addItemsToPlaylist(
         this.id,
@@ -76,12 +70,11 @@ class Playlist {
 }
 
 export class MonthlyPlaylistsSync {
-  constructor({ client, lastChecked, nameFormat, statePath, dryRun = false }) {
+  constructor({ client, currentUser = null, lastChecked, nameFormat }) {
     this.client = client;
+    this.currentUser = currentUser;
     this.lastChecked = lastChecked;
     this.nameFormat = nameFormat;
-    this.statePath = statePath;
-    this.dryRun = dryRun;
   }
 
   async getPlaylistsByName() {
@@ -96,18 +89,6 @@ export class MonthlyPlaylistsSync {
   }
 
   async createPlaylist(userId, name) {
-    if (this.dryRun) {
-      console.log(`DRY_RUN would create ${name}`);
-
-      const playlist = new Playlist(this.client, {
-        id: `dry-run:${name}`,
-        name,
-      });
-
-      playlist.songIds = new Set();
-      return playlist;
-    }
-
     const playlist = await this.client.createPlaylist(userId, name);
     console.log(`${name} was created`);
     return new Playlist(this.client, playlist);
@@ -122,7 +103,8 @@ export class MonthlyPlaylistsSync {
       return { newSongs: 0, added: 0, skipped: 0 };
     }
 
-    const user = await this.client.getCurrentUser();
+    const user = this.currentUser ?? await this.client.getCurrentUser();
+    this.currentUser = user;
     const playlistsByName = await this.getPlaylistsByName();
     let added = 0;
     let skipped = 0;
@@ -135,16 +117,12 @@ export class MonthlyPlaylistsSync {
         playlistsByName.set(group.name, playlist);
       }
 
-      const result = await playlist.addSongs(group.songs, { dryRun: this.dryRun });
+      const result = await playlist.addSongs(group.songs);
       added += result.added;
       skipped += result.skipped;
     }
 
     this.lastChecked = getNewestSongTimestamp(newSongs);
-
-    if (!this.dryRun) {
-      await writeState(this.statePath, this.lastChecked);
-    }
 
     return {
       newSongs: newSongs.length,
