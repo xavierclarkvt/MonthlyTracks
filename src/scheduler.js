@@ -63,7 +63,7 @@ export function createScheduler({
       }
     },
 
-    /** Run a single tick immediately (useful for testing). */
+    // run tick immediately, without waiting for the next interval — useful for testing
     tick,
   };
 }
