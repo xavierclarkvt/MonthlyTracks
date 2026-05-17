@@ -1,6 +1,9 @@
 export function createRouter(routes) {
   const routeMap = new Map(
-    routes.map((route) => [`${route.method.toUpperCase()} ${route.pathname}`, route.handler]),
+    routes.map((route) => [
+      `${route.method.toUpperCase()} ${route.pathname}`,
+      route.handler,
+    ])
   );
 
   return {

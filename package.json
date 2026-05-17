@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "start": "bun run server.js",
-    "bootstrap-token": "bun run src/bootstrap-refresh-token.js",
     "test": "bun test"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.3"
   }
 }

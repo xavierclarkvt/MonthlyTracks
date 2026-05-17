@@ -8,33 +8,12 @@ export const DEFAULT_DATABASE_FILE = "data/spotify-monthly-saves.db";
 const encoder = new TextEncoder();
 const ENCRYPTION_VERSION = "v1";
 const ENCRYPTION_CONTEXT = "spotify-monthly-saves:refresh-token";
-const defaultPlaylistNameFormatSql = DEFAULT_PLAYLIST_NAME_FORMAT.replaceAll("'", "''");
+const defaultPlaylistNameFormatSql = DEFAULT_PLAYLIST_NAME_FORMAT.replaceAll(
+  "'",
+  "''"
+);
 
-function toBase64Url(value) {
-  return Buffer.from(value)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
-}
-
-function fromBase64Url(value) {
-  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-
-  return new Uint8Array(Buffer.from(padded, "base64"));
-}
-
-function getRequiredCookieSecret(env) {
-  const value = env.COOKIE_SECRET?.trim();
-
-  if (!value) {
-    throw new Error("Missing required environment variable COOKIE_SECRET");
-  }
-
-  return value;
-}
-
+// Derive a stable AES-GCM key from COOKIE_SECRET so stored refresh tokens can be decrypted later.
 async function deriveEncryptionKey(cookieSecret) {
   const keyMaterial = encoder.encode(`${ENCRYPTION_CONTEXT}:${cookieSecret}`);
   const digest = await crypto.subtle.digest("SHA-256", keyMaterial);
@@ -43,34 +22,6 @@ async function deriveEncryptionKey(cookieSecret) {
     "encrypt",
     "decrypt",
   ]);
-}
-
-function normalizeUserRow(row) {
-  if (!row) {
-    return null;
-  }
-
-  return {
-    id: row.id,
-    displayName: row.display_name,
-    encryptedRefreshToken: row.encrypted_refresh_token,
-    lastChecked: row.last_checked ? new Date(row.last_checked) : null,
-    playlistNameFormat: row.playlist_name_format,
-    createdAt: row.created_at ? new Date(row.created_at) : null,
-    updatedAt: row.updated_at ? new Date(row.updated_at) : null,
-  };
-}
-
-function toTimestampValue(value) {
-  if (!value) {
-    return null;
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  return value;
 }
 
 export async function encryptRefreshToken(refreshToken, cookieSecret) {
@@ -83,13 +34,13 @@ export async function encryptRefreshToken(refreshToken, cookieSecret) {
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
-    encoder.encode(refreshToken),
+    encoder.encode(refreshToken)
   );
 
   return [
     ENCRYPTION_VERSION,
-    toBase64Url(iv),
-    toBase64Url(new Uint8Array(ciphertext)),
+    Buffer.from(iv).toString("base64"),
+    Buffer.from(new Uint8Array(ciphertext)).toString("base64"),
   ].join(".");
 }
 
@@ -102,19 +53,210 @@ export async function decryptRefreshToken(encryptedRefreshToken, cookieSecret) {
 
   const key = await deriveEncryptionKey(cookieSecret);
   const plaintext = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: fromBase64Url(ivValue) },
+    { name: "AES-GCM", iv: new Uint8Array(Buffer.from(ivValue, "base64")) },
     key,
-    fromBase64Url(ciphertextValue),
+    new Uint8Array(Buffer.from(ciphertextValue, "base64"))
   );
 
   return Buffer.from(plaintext).toString("utf8");
 }
 
-export function resolveDatabasePath({ cwd = process.cwd(), env = process.env } = {}) {
-  return resolve(cwd, DEFAULT_DATABASE_FILE);
+export class SpotifyMonthlySavesDatabase {
+  constructor({ db, databasePath, env = process.env }) {
+    this.db = db;
+    this.databasePath = databasePath;
+    this.env = env;
+  }
+
+  close() {
+    this.db.close();
+  }
+
+  getUser(userId) {
+    const row = this.db
+      .query(
+        `
+          SELECT
+            id,
+            display_name,
+            encrypted_refresh_token,
+            last_checked,
+            playlist_name_format,
+            auto_sync_enabled,
+            created_at,
+            updated_at
+          FROM users
+          WHERE id = ?
+        `
+      )
+      .get(userId);
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      displayName: row.display_name,
+      encryptedRefreshToken: row.encrypted_refresh_token,
+      lastChecked: row.last_checked ? new Date(row.last_checked) : null,
+      playlistNameFormat: row.playlist_name_format,
+      autoSyncEnabled: row.auto_sync_enabled === 1,
+      createdAt: row.created_at ? new Date(row.created_at) : null,
+      updatedAt: row.updated_at ? new Date(row.updated_at) : null,
+    };
+  }
+
+  async getUserWithRefreshToken(userId) {
+    const user = this.getUser(userId);
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      ...user,
+      refreshToken: await decryptRefreshToken(
+        user.encryptedRefreshToken,
+        this.env.COOKIE_SECRET.trim() // will error if COOKIE_SECRET is missing or empty, which is expected
+      ),
+    };
+  }
+
+  async upsertUser({
+    id,
+    displayName,
+    refreshToken,
+    lastChecked = null,
+    playlistNameFormat = DEFAULT_PLAYLIST_NAME_FORMAT,
+  }) {
+    const encryptedRefreshToken = await encryptRefreshToken(
+      refreshToken,
+      this.env.COOKIE_SECRET.trim() // will error if COOKIE_SECRET is missing or empty, which is expected
+    );
+
+    this.db
+      .query(
+        `
+        INSERT INTO users (
+          id,
+          display_name,
+          encrypted_refresh_token,
+          last_checked,
+          playlist_name_format
+        ) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          display_name = excluded.display_name,
+          encrypted_refresh_token = excluded.encrypted_refresh_token,
+          last_checked = excluded.last_checked,
+          playlist_name_format = excluded.playlist_name_format,
+          updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+      `
+      )
+      .run(
+        id,
+        displayName,
+        encryptedRefreshToken,
+        lastChecked instanceof Date
+          ? lastChecked.toISOString()
+          : (lastChecked ?? null),
+        playlistNameFormat
+      );
+
+    return this.getUser(id);
+  }
+
+  insertSyncHistory({
+    userId,
+    startedAt = new Date(),
+    finishedAt = null,
+    newSongsFound = 0,
+    songsAdded = 0,
+    songsSkipped = 0,
+    playlistsAffected = 0,
+    status,
+    errorMessage = null,
+  }) {
+    const result = this.db
+      .query(
+        `
+        INSERT INTO sync_history (
+          user_id,
+          started_at,
+          finished_at,
+          new_songs_found,
+          songs_added,
+          songs_skipped,
+          playlists_affected,
+          status,
+          error_message
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `
+      )
+      .run(
+        userId,
+        startedAt instanceof Date
+          ? startedAt.toISOString()
+          : (startedAt ?? null),
+        finishedAt instanceof Date
+          ? finishedAt.toISOString()
+          : (finishedAt ?? null),
+        newSongsFound,
+        songsAdded,
+        songsSkipped,
+        playlistsAffected,
+        status,
+        errorMessage
+      );
+
+    return Number(result.lastInsertRowid);
+  }
+
+  updateAutoSync(userId, enabled) {
+    this.db
+      .query(
+        `
+        UPDATE users
+        SET auto_sync_enabled = ?,
+            updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        WHERE id = ?
+      `
+      )
+      .run(enabled ? 1 : 0, userId);
+  }
+
+  getUsersDueForSync() {
+    const rows = this.db
+      .query(
+        `
+        SELECT id
+        FROM users
+        WHERE auto_sync_enabled = 1
+          AND (
+            last_checked IS NULL
+            OR last_checked < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-5 minutes')
+          )
+        ORDER BY last_checked ASC
+      `
+      )
+      .all();
+
+    return rows.map((row) => row.id);
+  }
 }
 
-function applySchema(db) {
+export async function initializeDatabase({
+  cwd = process.cwd(),
+  env = process.env,
+  databasePath = resolve(cwd, DEFAULT_DATABASE_FILE),
+  DatabaseImpl = Database,
+} = {}) {
+  await mkdir(dirname(databasePath), { recursive: true });
+
+  const db = new DatabaseImpl(databasePath);
+  db.exec("PRAGMA foreign_keys = ON;");
+  db.exec("PRAGMA journal_mode = WAL;");
+  // scuffed migrations system
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -122,6 +264,7 @@ function applySchema(db) {
       encrypted_refresh_token TEXT NOT NULL,
       last_checked TEXT,
       playlist_name_format TEXT NOT NULL DEFAULT '${defaultPlaylistNameFormatSql}',
+      auto_sync_enabled INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
@@ -143,143 +286,19 @@ function applySchema(db) {
     CREATE INDEX IF NOT EXISTS sync_history_user_id_started_at_idx
     ON sync_history (user_id, started_at DESC);
   `);
-}
 
-export class SpotifyMonthlySavesDatabase {
-  constructor({ db, databasePath, env = process.env }) {
-    this.db = db;
-    this.databasePath = databasePath;
-    this.env = env;
-    this.statements = {
-      upsertUser: this.db.query(`
-        INSERT INTO users (
-          id,
-          display_name,
-          encrypted_refresh_token,
-          last_checked,
-          playlist_name_format
-        ) VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          display_name = excluded.display_name,
-          encrypted_refresh_token = excluded.encrypted_refresh_token,
-          last_checked = excluded.last_checked,
-          playlist_name_format = excluded.playlist_name_format,
-          updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-      `),
-      selectUserById: this.db.query(`
-        SELECT
-          id,
-          display_name,
-          encrypted_refresh_token,
-          last_checked,
-          playlist_name_format,
-          created_at,
-          updated_at
-        FROM users
-        WHERE id = ?
-      `),
-      insertSyncHistory: this.db.query(`
-        INSERT INTO sync_history (
-          user_id,
-          started_at,
-          finished_at,
-          new_songs_found,
-          songs_added,
-          songs_skipped,
-          playlists_affected,
-          status,
-          error_message
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `),
-    };
-  }
+  // Phase 6 migration: add auto_sync_enabled column to existing databases.
+  const hasAutoSync = db
+    .query(
+      "SELECT 1 FROM pragma_table_info('users') WHERE name = 'auto_sync_enabled'"
+    )
+    .get();
 
-  close() {
-    this.db.close();
-  }
-
-  getUser(userId) {
-    return normalizeUserRow(this.statements.selectUserById.get(userId));
-  }
-
-  async getUserWithRefreshToken(userId) {
-    const user = this.getUser(userId);
-
-    if (!user) {
-      return null;
-    }
-
-    return {
-      ...user,
-      refreshToken: await decryptRefreshToken(
-        user.encryptedRefreshToken,
-        getRequiredCookieSecret(this.env),
-      ),
-    };
-  }
-
-  async upsertUser({
-    id,
-    displayName,
-    refreshToken,
-    lastChecked = null,
-    playlistNameFormat = DEFAULT_PLAYLIST_NAME_FORMAT,
-  }) {
-    const encryptedRefreshToken = await encryptRefreshToken(
-      refreshToken,
-      getRequiredCookieSecret(this.env),
+  if (!hasAutoSync) {
+    db.exec(
+      "ALTER TABLE users ADD COLUMN auto_sync_enabled INTEGER NOT NULL DEFAULT 0"
     );
-
-    this.statements.upsertUser.run(
-      id,
-      displayName,
-      encryptedRefreshToken,
-      toTimestampValue(lastChecked),
-      playlistNameFormat,
-    );
-
-    return this.getUser(id);
   }
-
-  insertSyncHistory({
-    userId,
-    startedAt = new Date(),
-    finishedAt = null,
-    newSongsFound = 0,
-    songsAdded = 0,
-    songsSkipped = 0,
-    playlistsAffected = 0,
-    status,
-    errorMessage = null,
-  }) {
-    const result = this.statements.insertSyncHistory.run(
-      userId,
-      toTimestampValue(startedAt),
-      toTimestampValue(finishedAt),
-      newSongsFound,
-      songsAdded,
-      songsSkipped,
-      playlistsAffected,
-      status,
-      errorMessage,
-    );
-
-    return Number(result.lastInsertRowid);
-  }
-}
-
-export async function initializeDatabase({
-  cwd = process.cwd(),
-  env = process.env,
-  databasePath = resolveDatabasePath({ cwd, env }),
-  DatabaseImpl = Database,
-} = {}) {
-  await mkdir(dirname(databasePath), { recursive: true });
-
-  const db = new DatabaseImpl(databasePath);
-  db.exec("PRAGMA foreign_keys = ON;");
-  db.exec("PRAGMA journal_mode = WAL;");
-  applySchema(db);
 
   return new SpotifyMonthlySavesDatabase({
     db,

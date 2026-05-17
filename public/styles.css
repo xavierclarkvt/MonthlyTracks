@@ -21,7 +21,11 @@ body {
   font-family: "Space Grotesk", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 35%),
+    radial-gradient(
+      circle at top left,
+      rgba(255, 255, 255, 0.7),
+      transparent 35%
+    ),
     linear-gradient(135deg, var(--bg) 0%, #efe4d5 45%, var(--bg-accent) 100%);
 }
 
@@ -57,6 +61,63 @@ body::after {
   padding: 3rem 0 4rem;
 }
 
+.auth-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 0 1rem;
+  gap: 1rem;
+}
+
+.connect-button {
+  display: inline-block;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.7rem 1.2rem;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: white;
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    var(--accent-strong) 100%
+  );
+  text-decoration: none;
+  box-shadow: 0 8px 16px rgba(15, 143, 91, 0.2);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.connect-button:hover {
+  transform: translateY(-1px);
+}
+
+.user-greeting {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.inline-form {
+  display: inline;
+}
+
+.logout-button {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.logout-button:hover {
+  color: var(--text);
+}
+
 .hero,
 .panel {
   background: var(--panel);
@@ -69,15 +130,6 @@ body::after {
 .hero {
   padding: 3rem;
   margin-bottom: 1.5rem;
-}
-
-.eyebrow {
-  margin: 0 0 1rem;
-  color: var(--accent-strong);
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.78rem;
-  font-weight: 700;
 }
 
 h1,
@@ -112,7 +164,7 @@ h1 {
   line-height: 1.65;
 }
 
-.actions {
+.actions:not([hidden]) {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
@@ -127,7 +179,11 @@ h1 {
   font: inherit;
   font-weight: 700;
   color: white;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    var(--accent-strong) 100%
+  );
   cursor: pointer;
   transition:
     transform 180ms ease,
@@ -223,6 +279,79 @@ h3 {
   white-space: pre-wrap;
   font: inherit;
   line-height: 1.5;
+}
+
+.settings-panel {
+  margin-top: 1.5rem;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1.25rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(37, 30, 20, 0.08);
+}
+
+.toggle-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-weight: 500;
+}
+
+.toggle-hint {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.toggle-button {
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.toggle-track {
+  display: block;
+  position: relative;
+  width: 3rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: rgba(34, 27, 19, 0.16);
+  transition: background 200ms ease;
+  pointer-events: none;
+}
+
+.toggle-button[data-on="true"] .toggle-track {
+  background: var(--accent);
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform 200ms ease;
+}
+
+.toggle-button[data-on="true"] .toggle-knob {
+  transform: translateX(1.35rem);
+}
+
+.toggle-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }
 
 @media (max-width: 700px) {

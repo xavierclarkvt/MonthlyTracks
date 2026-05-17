@@ -8,22 +8,33 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
+      rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
     <script type="module" src="/app.js"></script>
   </head>
   <body>
     <main class="shell">
+      <nav class="auth-bar" id="auth-bar" hidden>
+        <div id="logged-out" hidden>
+          <a href="/auth/login" class="connect-button">Connect with Spotify</a>
+        </div>
+        <div id="logged-in" hidden>
+          <span class="user-greeting">
+            Hello, <strong id="user-name"></strong>
+          </span>
+          <form action="/auth/logout" method="POST" class="inline-form">
+            <button type="submit" class="logout-button">Log out</button>
+          </form>
+        </div>
+      </nav>
+
       <section class="hero">
-        <p class="eyebrow">Phase 1</p>
         <h1>Run your Spotify monthly playlist sync from the browser.</h1>
         <p class="lede">
-          This server still uses the same local environment variables and saved
-          state as the CLI. The difference is that you can trigger it from a web
-          page and inspect the result immediately.
+          Automatically organize your saved songs into monthly playlists.
+          Connect your Spotify account to get started.
         </p>
-        <div class="actions">
+        <div class="actions" id="sync-actions" hidden>
           <button id="sync-button" class="sync-button" type="button">
             Sync Now
           </button>
@@ -59,8 +70,33 @@
           </div>
           <div>
             <h3>Notes</h3>
-            <pre id="message" class="message">Press “Sync Now” to start.</pre>
+            <pre id="message" class="message">
+Connect your Spotify account to sync.</pre
+            >
           </div>
+        </div>
+      </section>
+
+      <section class="panel settings-panel" id="settings-panel" hidden>
+        <div class="panel-header">
+          <h2>Settings</h2>
+        </div>
+        <div class="setting-row">
+          <label class="toggle-label" for="auto-sync-toggle">
+            <span>Enable automatic daily sync</span>
+            <span class="toggle-hint"
+              >When enabled, your liked songs are synced once every 24
+              hours.</span
+            >
+          </label>
+          <button
+            id="auto-sync-toggle"
+            class="toggle-button"
+            type="button"
+            role="switch"
+            aria-checked="false">
+            <span class="toggle-track"><span class="toggle-knob"></span></span>
+          </button>
         </div>
       </section>
     </main>

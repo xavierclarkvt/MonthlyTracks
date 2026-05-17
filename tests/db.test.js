@@ -19,19 +19,22 @@ async function createTempDatabasePath() {
 
 afterEach(async () => {
   await Promise.all(
-    cleanupPaths.splice(0).map((directory) =>
-      rm(directory, { recursive: true, force: true }),
-    ),
+    cleanupPaths
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true }))
   );
 });
 
 describe("refresh token encryption", () => {
   test("round-trips encrypted refresh tokens", async () => {
-    const encrypted = await encryptRefreshToken("refresh-token-123", "secret-value");
+    const encrypted = await encryptRefreshToken(
+      "refresh-token-123",
+      "secret-value"
+    );
 
     expect(encrypted).not.toBe("refresh-token-123");
     expect(await decryptRefreshToken(encrypted, "secret-value")).toBe(
-      "refresh-token-123",
+      "refresh-token-123"
     );
   });
 });
@@ -45,13 +48,17 @@ describe("initializeDatabase", () => {
 
     expect(
       database.db
-        .query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
-        .get("users"),
+        .query(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?"
+        )
+        .get("users")
     ).toEqual({ name: "users" });
     expect(
       database.db
-        .query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
-        .get("sync_history"),
+        .query(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?"
+        )
+        .get("sync_history")
     ).toEqual({ name: "sync_history" });
 
     database.close();
@@ -72,10 +79,13 @@ describe("initializeDatabase", () => {
     });
 
     const storedUser = database.getUser("spotify-user-1");
-    const hydratedUser = await database.getUserWithRefreshToken("spotify-user-1");
+    const hydratedUser =
+      await database.getUserWithRefreshToken("spotify-user-1");
 
     expect(storedUser.encryptedRefreshToken).not.toBe("refresh-token-123");
-    expect(storedUser.lastChecked?.toISOString()).toBe("2026-05-01T00:00:00.000Z");
+    expect(storedUser.lastChecked?.toISOString()).toBe(
+      "2026-05-01T00:00:00.000Z"
+    );
     expect(hydratedUser.refreshToken).toBe("refresh-token-123");
     expect(hydratedUser.playlistNameFormat).toBe("%Y-%m");
 

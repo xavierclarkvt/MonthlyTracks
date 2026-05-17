@@ -98,7 +98,9 @@ export class SpotifyApiClient {
 
   async request(path, options = {}, attempt = 0) {
     const token = await this.getAccessToken(attempt > 0);
-    const requestUrl = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
+    const requestUrl = path.startsWith("http")
+      ? path
+      : `${API_BASE_URL}${path}`;
     const response = await this.fetchImpl(requestUrl, {
       ...options,
       headers: {
@@ -112,7 +114,9 @@ export class SpotifyApiClient {
     }
 
     if (response.status === 429 && attempt < 5) {
-      const retryAfterSeconds = Number(response.headers.get("retry-after") ?? 1);
+      const retryAfterSeconds = Number(
+        response.headers.get("retry-after") ?? 1
+      );
       await wait(retryAfterSeconds * 1000);
       return this.request(path, options, attempt + 1);
     }
@@ -120,7 +124,9 @@ export class SpotifyApiClient {
     const body = await parseResponseBody(response);
 
     if (!response.ok) {
-      throw new Error(`Spotify API request failed (${response.status}): ${toErrorMessage(body)}`);
+      throw new Error(
+        `Spotify API request failed (${response.status}): ${toErrorMessage(body)}`
+      );
     }
 
     return body;

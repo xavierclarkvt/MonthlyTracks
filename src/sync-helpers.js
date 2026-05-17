@@ -44,7 +44,10 @@ export function getDefaultLastChecked(now = new Date()) {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 }
 
-export function formatPlaylistName(date, format = DEFAULT_PLAYLIST_NAME_FORMAT) {
+export function formatPlaylistName(
+  date,
+  format = DEFAULT_PLAYLIST_NAME_FORMAT
+) {
   return format.replace(/%[%YymbB]/g, (token) => {
     switch (token) {
       case "%%":
@@ -96,7 +99,7 @@ export function sortSongsChronologically(songs) {
 
 export function groupSongsByPlaylistName(
   songs,
-  format = DEFAULT_PLAYLIST_NAME_FORMAT,
+  format = DEFAULT_PLAYLIST_NAME_FORMAT
 ) {
   const groups = [];
 
@@ -119,6 +122,6 @@ export function getNewestSongTimestamp(songs) {
   return songs.reduce(
     (latest, song) =>
       song.addedAt.getTime() > latest.getTime() ? song.addedAt : latest,
-    songs[0].addedAt,
+    songs[0].addedAt
   );
 }

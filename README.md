@@ -19,7 +19,7 @@ Required:
 Optional:
 
 - `PLAYLIST_NAME_FORMAT`: playlist naming pattern. Default: `%b '%y` which yields names like `May '26`.
-- `SPOTIFY_REDIRECT_URI`: only used by the bootstrap helper. Default: `http://127.0.0.1:3000/callback`.
+- `SPOTIFY_REDIRECT_URI`: required for the browser OAuth flow. Default: `http://127.0.0.1:3000/auth/callback`.
 - `COOKIE_SECRET`: required for encrypted refresh-token storage in SQLite.
 
 Bun loads `.env` automatically, so copying `.env.example` to `.env` is enough for local runs.
@@ -27,7 +27,7 @@ Bun loads `.env` automatically, so copying `.env.example` to `.env` is enough fo
 ## Spotify app setup
 
 1. Create an app in the Spotify developer dashboard.
-2. Add a redirect URI that matches `SPOTIFY_REDIRECT_URI`. The default in this repo is `http://127.0.0.1:3000/callback`.
+2. Add a redirect URI that matches `SPOTIFY_REDIRECT_URI`. The default in this repo is `http://127.0.0.1:3000/auth/callback`.
 3. Copy the app's client ID and client secret into `.env`.
 
 ## One-time refresh token bootstrap
@@ -66,6 +66,8 @@ bun run start
 ```
 
 Then open `http://127.0.0.1:3000` and click `Sync Now`.
+
+The browser sign-in flow uses `SPOTIFY_REDIRECT_URI`, and the callback route in this app is `/auth/callback`.
 
 The current pre-OAuth sync path still uses `.env` Spotify credentials, but its checkpoint now lives in SQLite instead of a JSON state file.
 

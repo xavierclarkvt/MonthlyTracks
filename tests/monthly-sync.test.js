@@ -65,7 +65,7 @@ describe("getDefaultLastChecked", () => {
     const now = new Date("2026-05-07T21:30:00Z");
 
     expect(getDefaultLastChecked(now).toISOString()).toBe(
-      "2026-05-01T00:00:00.000Z",
+      "2026-05-01T00:00:00.000Z"
     );
   });
 });
