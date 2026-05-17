@@ -98,6 +98,45 @@ Connect your Spotify account to sync.</pre
             <span class="toggle-track"><span class="toggle-knob"></span></span>
           </button>
         </div>
+        <div class="setting-row setting-row-stack">
+          <div class="setting-copy">
+            <label class="setting-label" for="playlist-frequency-monthly">
+              Playlist frequency
+            </label>
+            <p class="toggle-hint">
+              Choose whether new playlists are named by month or quarter.
+            </p>
+          </div>
+          <div
+            class="segmented-control"
+            role="radiogroup"
+            aria-label="Playlist frequency">
+            <label class="segmented-option">
+              <input
+                id="playlist-frequency-monthly"
+                type="radio"
+                name="playlist-frequency"
+                value="monthly"
+                checked />
+              <span>Monthly</span>
+            </label>
+            <label class="segmented-option">
+              <input type="radio" name="playlist-frequency" value="quarterly" />
+              <span>Quarterly</span>
+            </label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-copy">
+            <label class="setting-label" for="playlist-name-format">
+              Playlist name
+            </label>
+            <p class="toggle-hint">
+              Pick the playlist title pattern used when saved songs are grouped.
+            </p>
+          </div>
+          <select id="playlist-name-format" class="setting-select"></select>
+        </div>
       </section>
     </main>
   </body>

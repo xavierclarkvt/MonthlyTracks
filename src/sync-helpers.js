@@ -1,4 +1,27 @@
-export const DEFAULT_PLAYLIST_NAME_FORMAT = "%b '%y";
+export const VALID_PLAYLIST_FREQUENCIES = ["monthly", "quarterly"];
+export const PLAYLIST_NAME_FORMAT_OPTIONS = [
+  { frequency: "monthly", label: "Jan '26", value: "%b '%y" },
+  { frequency: "monthly", label: "'26 Jan", value: "'%y %b" },
+  { frequency: "monthly", label: "Jan 2026", value: "%b %Y" },
+  { frequency: "monthly", label: "2026 Jan", value: "%Y %b" },
+  { frequency: "monthly", label: "2026-01", value: "%Y-%m" },
+  { frequency: "monthly", label: "January 2026", value: "%B %Y" },
+  { frequency: "monthly", label: "2026 January", value: "%Y %B" },
+  { frequency: "monthly", label: "'26_01", value: "'%y_%m" },
+  { frequency: "quarterly", label: "Q1 2026", value: "Q%Q %Y" },
+  { frequency: "quarterly", label: "2026 Q1", value: "%Y Q%Q" },
+  { frequency: "quarterly", label: "Q1 '26", value: "Q%Q '%y" },
+  { frequency: "quarterly", label: "'26 Q1", value: "'%y Q%Q" },
+  { frequency: "quarterly", label: "Winter 2026", value: "%S %Y" },
+  { frequency: "quarterly", label: "2026 Winter", value: "%Y %S" },
+  { frequency: "quarterly", label: "Winter '26", value: "%S '%y" },
+  { frequency: "quarterly", label: "'26 Winter", value: "'%y %S" },
+];
+
+export function getDefaultFormat(frequency = "monthly") {
+  return PLAYLIST_NAME_FORMAT_OPTIONS.find((o) => o.frequency === frequency)
+    .value;
+}
 
 const SHORT_MONTH_NAMES = [
   "Jan",
@@ -30,6 +53,8 @@ const LONG_MONTH_NAMES = [
   "December",
 ];
 
+const SEASON_NAMES = ["Winter", "Spring", "Summer", "Fall"];
+
 export function parseIsoTimestamp(value, label = "timestamp") {
   const parsed = new Date(value);
 
@@ -44,11 +69,10 @@ export function getDefaultLastChecked(now = new Date()) {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 }
 
-export function formatPlaylistName(
-  date,
-  format = DEFAULT_PLAYLIST_NAME_FORMAT
-) {
-  return format.replace(/%[%YymbB]/g, (token) => {
+export function formatPlaylistName(date, format = getDefaultFormat()) {
+  return format.replace(/%[%YymbBQS]/g, (token) => {
+    const quarter = Math.floor(date.getUTCMonth() / 3) + 1;
+
     switch (token) {
       case "%%":
         return "%";
@@ -62,6 +86,10 @@ export function formatPlaylistName(
         return SHORT_MONTH_NAMES[date.getUTCMonth()];
       case "%B":
         return LONG_MONTH_NAMES[date.getUTCMonth()];
+      case "%Q":
+        return String(quarter);
+      case "%S":
+        return SEASON_NAMES[quarter - 1];
       default:
         return token;
     }
@@ -97,10 +125,7 @@ export function sortSongsChronologically(songs) {
   });
 }
 
-export function groupSongsByPlaylistName(
-  songs,
-  format = DEFAULT_PLAYLIST_NAME_FORMAT
-) {
+export function groupSongsByPlaylistName(songs, format) {
   const groups = [];
 
   for (const song of sortSongsChronologically(songs)) {

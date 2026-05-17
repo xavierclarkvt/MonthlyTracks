@@ -4,6 +4,11 @@ import { initializeDatabase } from "./src/db.js";
 import { createRouter } from "./src/router.js";
 import { runMonthlySync } from "./src/run-sync.js";
 import { createScheduler } from "./src/scheduler.js";
+import {
+  getDefaultFormat,
+  PLAYLIST_NAME_FORMAT_OPTIONS,
+  VALID_PLAYLIST_FREQUENCIES,
+} from "./src/sync-helpers.js";
 
 const HOST = process.env.HOST?.trim() || "127.0.0.1";
 const PORT = Number(process.env.PORT ?? 3000);
@@ -129,13 +134,24 @@ const router = createRouter([
 
       return json({
         ok: true,
-        settings: { autoSyncEnabled: user.autoSyncEnabled },
+        settings: {
+          autoSyncEnabled: user.autoSyncEnabled,
+          playlistNameFormat: user.playlistNameFormat,
+          playlistFrequency: user.playlistFrequency,
+        },
+        formatOptions: VALID_PLAYLIST_FREQUENCIES.map((frequency) => ({
+          frequency,
+          label: frequency === "monthly" ? "Monthly" : "Quarterly",
+          options: PLAYLIST_NAME_FORMAT_OPTIONS.filter(
+            (option) => option.frequency === frequency
+          ),
+        })),
       });
     },
   },
   {
     method: "POST",
-    pathname: "/api/settings/auto-sync",
+    pathname: "/api/settings",
     async handler(request) {
       const userId = await getAuthenticatedUserId(request, auth.cookieSecret);
 
@@ -143,12 +159,62 @@ const router = createRouter([
         return json({ ok: false, error: "Not authenticated" }, { status: 401 });
       }
 
-      const body = await request.json();
-      const enabled = Boolean(body.enabled);
+      const user = database.getUser(userId);
 
-      database.updateAutoSync(userId, enabled);
+      if (!user) {
+        return json({ ok: false, error: "User not found" }, { status: 404 });
+      }
 
-      return json({ ok: true, autoSyncEnabled: enabled });
+      const body = await request?.json();
+
+      if (!body || Array.isArray(body)) {
+        return json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+      }
+
+      const validators = {
+        autoSyncEnabled: (v) =>
+          typeof v === "boolean" || "autoSyncEnabled must be a boolean",
+        playlistNameFormat: (v) =>
+          (typeof v === "string" &&
+            PLAYLIST_NAME_FORMAT_OPTIONS.some((o) => o.value === v)) ||
+          "Invalid playlistNameFormat",
+        playlistFrequency: (v) =>
+          (typeof v === "string" && VALID_PLAYLIST_FREQUENCIES.includes(v)) ||
+          "Invalid playlistFrequency",
+      };
+
+      const updates = {};
+
+      for (const [key, validate] of Object.entries(validators)) {
+        if (!Object.hasOwn(body, key)) continue; // only validate provided fields
+        const result = validate(body[key]);
+        if (result !== true) {
+          return json({ ok: false, error: result }, { status: 400 });
+        }
+        updates[key] = body[key];
+      }
+
+      // if changing frequency but not format, update format to a sensible default for the new frequency
+      if (
+        updates.playlistFrequency &&
+        !updates.playlistNameFormat &&
+        user.playlistFrequency !== updates.playlistFrequency
+      ) {
+        updates.playlistNameFormat = getDefaultFormat(
+          updates.playlistFrequency
+        );
+      }
+
+      const updatedUser = database.updateSettings({ userId, ...updates });
+
+      return json({
+        ok: true,
+        settings: {
+          autoSyncEnabled: updatedUser.autoSyncEnabled,
+          playlistNameFormat: updatedUser.playlistNameFormat,
+          playlistFrequency: updatedUser.playlistFrequency,
+        },
+      });
     },
   },
 ]);

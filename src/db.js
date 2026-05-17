@@ -1,17 +1,12 @@
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { Database } from "bun:sqlite";
-import { DEFAULT_PLAYLIST_NAME_FORMAT } from "./sync-helpers.js";
 
 export const DEFAULT_DATABASE_FILE = "data/spotify-monthly-saves.db";
 
 const encoder = new TextEncoder();
 const ENCRYPTION_VERSION = "v1";
 const ENCRYPTION_CONTEXT = "spotify-monthly-saves:refresh-token";
-const defaultPlaylistNameFormatSql = DEFAULT_PLAYLIST_NAME_FORMAT.replaceAll(
-  "'",
-  "''"
-);
 
 // Derive a stable AES-GCM key from COOKIE_SECRET so stored refresh tokens can be decrypted later.
 async function deriveEncryptionKey(cookieSecret) {
@@ -83,6 +78,7 @@ export class SpotifyMonthlySavesDatabase {
             last_checked,
             playlist_name_format,
             auto_sync_enabled,
+            playlist_frequency,
             created_at,
             updated_at
           FROM users
@@ -102,6 +98,7 @@ export class SpotifyMonthlySavesDatabase {
       lastChecked: row.last_checked ? new Date(row.last_checked) : null,
       playlistNameFormat: row.playlist_name_format,
       autoSyncEnabled: row.auto_sync_enabled === 1,
+      playlistFrequency: row.playlist_frequency,
       createdAt: row.created_at ? new Date(row.created_at) : null,
       updatedAt: row.updated_at ? new Date(row.updated_at) : null,
     };
@@ -128,7 +125,8 @@ export class SpotifyMonthlySavesDatabase {
     displayName,
     refreshToken,
     lastChecked = null,
-    playlistNameFormat = DEFAULT_PLAYLIST_NAME_FORMAT,
+    playlistNameFormat = "'%y %b",
+    playlistFrequency = "monthly",
   }) {
     const encryptedRefreshToken = await encryptRefreshToken(
       refreshToken,
@@ -143,13 +141,15 @@ export class SpotifyMonthlySavesDatabase {
           display_name,
           encrypted_refresh_token,
           last_checked,
-          playlist_name_format
-        ) VALUES (?, ?, ?, ?, ?)
+          playlist_name_format,
+          playlist_frequency
+        ) VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           display_name = excluded.display_name,
           encrypted_refresh_token = excluded.encrypted_refresh_token,
           last_checked = excluded.last_checked,
           playlist_name_format = excluded.playlist_name_format,
+          playlist_frequency = excluded.playlist_frequency,
           updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
       `
       )
@@ -160,7 +160,8 @@ export class SpotifyMonthlySavesDatabase {
         lastChecked instanceof Date
           ? lastChecked.toISOString()
           : (lastChecked ?? null),
-        playlistNameFormat
+        playlistNameFormat,
+        playlistFrequency
       );
 
     return this.getUser(id);
@@ -212,17 +213,35 @@ export class SpotifyMonthlySavesDatabase {
     return Number(result.lastInsertRowid);
   }
 
-  updateAutoSync(userId, enabled) {
+  updateSettings({
+    userId,
+    autoSyncEnabled,
+    playlistNameFormat,
+    playlistFrequency,
+  }) {
+    const fields = {
+      auto_sync_enabled:
+        autoSyncEnabled !== undefined ? (autoSyncEnabled ? 1 : 0) : undefined,
+      playlist_name_format: playlistNameFormat,
+      playlist_frequency: playlistFrequency,
+    };
+
+    const entries = Object.entries(fields).filter(([, v]) => v !== undefined);
+
+    if (entries.length === 0) {
+      return this.getUser(userId);
+    }
+
     this.db
       .query(
-        `
-        UPDATE users
-        SET auto_sync_enabled = ?,
-            updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-        WHERE id = ?
-      `
+        `UPDATE users SET 
+          ${entries.map(([col]) => `${col} = ?`).join(", ")},
+          updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        WHERE id = ?`
       )
-      .run(enabled ? 1 : 0, userId);
+      .run(...entries.map(([, v]) => v), userId);
+
+    return this.getUser(userId);
   }
 
   getUsersDueForSync() {
@@ -256,6 +275,7 @@ export async function initializeDatabase({
   const db = new DatabaseImpl(databasePath);
   db.exec("PRAGMA foreign_keys = ON;");
   db.exec("PRAGMA journal_mode = WAL;");
+
   // scuffed migrations system
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -263,8 +283,9 @@ export async function initializeDatabase({
       display_name TEXT NOT NULL,
       encrypted_refresh_token TEXT NOT NULL,
       last_checked TEXT,
-      playlist_name_format TEXT NOT NULL DEFAULT '${defaultPlaylistNameFormatSql}',
-      auto_sync_enabled INTEGER NOT NULL DEFAULT 0,
+      playlist_name_format TEXT NOT NULL DEFAULT '"%B %Y"',
+      auto_sync_enabled INTEGER NOT NULL DEFAULT 1 CHECK (auto_sync_enabled IN (0, 1)),
+      playlist_frequency TEXT NOT NULL DEFAULT 'monthly' CHECK (playlist_frequency IN ('monthly', 'quarterly')),
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
@@ -286,19 +307,6 @@ export async function initializeDatabase({
     CREATE INDEX IF NOT EXISTS sync_history_user_id_started_at_idx
     ON sync_history (user_id, started_at DESC);
   `);
-
-  // Phase 6 migration: add auto_sync_enabled column to existing databases.
-  const hasAutoSync = db
-    .query(
-      "SELECT 1 FROM pragma_table_info('users') WHERE name = 'auto_sync_enabled'"
-    )
-    .get();
-
-  if (!hasAutoSync) {
-    db.exec(
-      "ALTER TABLE users ADD COLUMN auto_sync_enabled INTEGER NOT NULL DEFAULT 0"
-    );
-  }
 
   return new SpotifyMonthlySavesDatabase({
     db,

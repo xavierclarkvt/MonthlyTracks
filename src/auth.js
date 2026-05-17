@@ -216,6 +216,7 @@ export function createAuthHandlers({ database, env = process.env }) {
         refreshToken: tokenBody.refresh_token,
         lastChecked: existingUser?.lastChecked ?? null,
         playlistNameFormat: existingUser?.playlistNameFormat,
+        playlistFrequency: existingUser?.playlistFrequency,
       });
 
       const sessionCookie = await createSessionCookieHeader(

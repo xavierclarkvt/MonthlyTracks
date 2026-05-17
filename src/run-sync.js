@@ -1,6 +1,6 @@
 import { SpotifyApiClient } from "./spotify-client.js";
 import {
-  DEFAULT_PLAYLIST_NAME_FORMAT,
+  getDefaultFormat,
   getDefaultLastChecked,
   filterNewSongs,
   getNewestSongTimestamp,
@@ -178,7 +178,8 @@ export async function runMonthlySync({
 
   const { lastChecked, lastCheckedSource } = resolveLastChecked(userWithToken);
   const playlistNameFormat =
-    userWithToken.playlistNameFormat || DEFAULT_PLAYLIST_NAME_FORMAT;
+    userWithToken.playlistNameFormat ||
+    getDefaultFormat(userWithToken.playlistFrequency);
 
   const client = new clientClass({
     clientId,
@@ -207,6 +208,7 @@ export async function runMonthlySync({
       refreshToken: client.refreshToken,
       lastChecked: result.lastChecked ?? userWithToken.lastChecked ?? null,
       playlistNameFormat,
+      playlistFrequency: userWithToken.playlistFrequency,
     });
 
     database.insertSyncHistory({
@@ -223,6 +225,7 @@ export async function runMonthlySync({
     return {
       config: {
         playlistNameFormat,
+        playlistFrequency: userWithToken.playlistFrequency,
         lastChecked,
         lastCheckedSource,
       },

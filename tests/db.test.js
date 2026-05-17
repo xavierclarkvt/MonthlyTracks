@@ -60,6 +60,10 @@ describe("initializeDatabase", () => {
         )
         .get("sync_history")
     ).toEqual({ name: "sync_history" });
+    expect(
+      database.db.query("SELECT playlist_frequency FROM users WHERE 1 = 0")
+        .columnNames
+    ).toContain("playlist_frequency");
 
     database.close();
   });
@@ -88,6 +92,42 @@ describe("initializeDatabase", () => {
     );
     expect(hydratedUser.refreshToken).toBe("refresh-token-123");
     expect(hydratedUser.playlistNameFormat).toBe("%Y-%m");
+    expect(hydratedUser.playlistFrequency).toBe("monthly");
+
+    database.close();
+  });
+
+  test("partially updates user settings", async () => {
+    const database = await initializeDatabase({
+      databasePath: await createTempDatabasePath(),
+      env: { COOKIE_SECRET: "secret-value" },
+    });
+
+    await database.upsertUser({
+      id: "spotify-user-1",
+      displayName: "Test User",
+      refreshToken: "refresh-token-123",
+      playlistNameFormat: "%Y-%m",
+    });
+
+    const afterAutoSync = database.updateSettings({
+      userId: "spotify-user-1",
+      autoSyncEnabled: true,
+    });
+
+    expect(afterAutoSync.autoSyncEnabled).toBe(true);
+    expect(afterAutoSync.playlistNameFormat).toBe("%Y-%m");
+    expect(afterAutoSync.playlistFrequency).toBe("monthly");
+
+    const afterFormatAndFrequency = database.updateSettings({
+      userId: "spotify-user-1",
+      playlistNameFormat: "Q%Q %Y",
+      playlistFrequency: "quarterly",
+    });
+
+    expect(afterFormatAndFrequency.autoSyncEnabled).toBe(true);
+    expect(afterFormatAndFrequency.playlistNameFormat).toBe("Q%Q %Y");
+    expect(afterFormatAndFrequency.playlistFrequency).toBe("quarterly");
 
     database.close();
   });

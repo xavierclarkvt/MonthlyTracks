@@ -12,6 +12,19 @@ const threshold = document.querySelector("#threshold");
 const message = document.querySelector("#message");
 const settingsPanel = document.querySelector("#settings-panel");
 const autoSyncToggle = document.querySelector("#auto-sync-toggle");
+const playlistNameFormatSelect = document.querySelector(
+  "#playlist-name-format"
+);
+const playlistFrequencyInputs = document.querySelectorAll(
+  'input[name="playlist-frequency"]'
+);
+
+let formatOptions = [];
+let currentSettings = {
+  autoSyncEnabled: false,
+  playlistNameFormat: "",
+  playlistFrequency: "monthly",
+};
 
 function setStatus(label, state) {
   statusPill.textContent = label;
@@ -33,44 +46,141 @@ function setAutoSyncState(enabled) {
   autoSyncToggle.dataset.on = String(enabled);
 }
 
+function setPlaylistFrequencyState(playlistFrequency) {
+  for (const input of playlistFrequencyInputs) {
+    input.checked = input.value === playlistFrequency;
+  }
+}
+
+function getOptionsForFrequency(playlistFrequency) {
+  return (
+    formatOptions.find((group) => group.frequency === playlistFrequency)
+      ?.options ?? []
+  );
+}
+
+function renderPlaylistNameOptions(playlistFrequency, selectedValue) {
+  const options = getOptionsForFrequency(playlistFrequency);
+  const resolvedValue = options.some((option) => option.value === selectedValue)
+    ? selectedValue
+    : (options[0]?.value ?? "");
+
+  playlistNameFormatSelect.replaceChildren();
+
+  for (const group of formatOptions) {
+    if (group.frequency !== playlistFrequency) {
+      continue;
+    }
+
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.label;
+
+    for (const option of group.options) {
+      const optionElement = document.createElement("option");
+      optionElement.value = option.value;
+      optionElement.textContent = option.label;
+      optgroup.append(optionElement);
+    }
+
+    playlistNameFormatSelect.append(optgroup);
+  }
+
+  playlistNameFormatSelect.value = resolvedValue;
+  return resolvedValue;
+}
+
 async function loadSettings() {
   try {
     const response = await fetch("/api/settings");
     const data = await response.json();
 
     if (data.ok) {
-      setAutoSyncState(data.settings.autoSyncEnabled);
+      formatOptions = data.formatOptions ?? [];
+      currentSettings = {
+        autoSyncEnabled: data.settings.autoSyncEnabled,
+        playlistNameFormat: data.settings.playlistNameFormat,
+        playlistFrequency: data.settings.playlistFrequency,
+      };
+
+      setAutoSyncState(currentSettings.autoSyncEnabled);
+      setPlaylistFrequencyState(currentSettings.playlistFrequency);
+      currentSettings.playlistNameFormat = renderPlaylistNameOptions(
+        currentSettings.playlistFrequency,
+        currentSettings.playlistNameFormat
+      );
     }
   } catch {
     // Settings failed to load — leave toggle in default off state.
   }
 }
 
-async function toggleAutoSync() {
-  const currentlyEnabled =
-    autoSyncToggle.getAttribute("aria-checked") === "true";
-  const newValue = !currentlyEnabled;
+function setSettingsControlsDisabled(disabled) {
+  autoSyncToggle.disabled = disabled;
+  playlistNameFormatSelect.disabled = disabled;
 
-  // Optimistically update UI
-  setAutoSyncState(newValue);
-  autoSyncToggle.disabled = true;
+  for (const input of playlistFrequencyInputs) {
+    input.disabled = disabled;
+  }
+}
+
+function applySettings(settings) {
+  currentSettings = {
+    autoSyncEnabled: settings.autoSyncEnabled,
+    playlistNameFormat: settings.playlistNameFormat,
+    playlistFrequency: settings.playlistFrequency,
+  };
+
+  setAutoSyncState(currentSettings.autoSyncEnabled);
+  setPlaylistFrequencyState(currentSettings.playlistFrequency);
+  currentSettings.playlistNameFormat = renderPlaylistNameOptions(
+    currentSettings.playlistFrequency,
+    currentSettings.playlistNameFormat
+  );
+}
+
+async function saveSettings(field, value) {
+  const updates =
+    typeof field === "string" && field.length > 0 ? { [field]: value } : field;
+  const previousSettings = { ...currentSettings };
+
+  if (updates.autoSyncEnabled !== undefined) {
+    setAutoSyncState(updates.autoSyncEnabled);
+  }
+
+  if (updates.playlistFrequency !== undefined) {
+    setPlaylistFrequencyState(updates.playlistFrequency);
+  }
+
+  if (
+    updates.playlistFrequency !== undefined ||
+    updates.playlistNameFormat !== undefined
+  ) {
+    renderPlaylistNameOptions(
+      updates.playlistFrequency ?? currentSettings.playlistFrequency,
+      updates.playlistNameFormat ?? currentSettings.playlistNameFormat
+    );
+  }
+
+  setSettingsControlsDisabled(true);
 
   try {
-    const response = await fetch("/api/settings/auto-sync", {
+    const response = await fetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled: newValue }),
+      body: JSON.stringify(updates),
     });
     const data = await response.json();
 
-    if (!response.ok || !data.ok) {
-      // Revert on failure
-      setAutoSyncState(currentlyEnabled);
+    if (!response.ok || !data.ok || !data.settings) {
+      applySettings(previousSettings);
+      return;
     }
+
+    applySettings(data.settings);
   } catch {
-    setAutoSyncState(currentlyEnabled);
+    applySettings(previousSettings);
   } finally {
-    autoSyncToggle.disabled = false;
+    setSettingsControlsDisabled(false);
   }
 }
 
@@ -142,7 +252,28 @@ syncButton.addEventListener("click", () => {
 });
 
 autoSyncToggle.addEventListener("click", () => {
-  void toggleAutoSync();
+  const nextValue = autoSyncToggle.getAttribute("aria-checked") !== "true";
+  void saveSettings("autoSyncEnabled", nextValue);
 });
+
+playlistNameFormatSelect.addEventListener("change", () => {
+  void saveSettings("playlistNameFormat", playlistNameFormatSelect.value);
+});
+
+for (const input of playlistFrequencyInputs) {
+  input.addEventListener("change", () => {
+    if (!input.checked) {
+      return;
+    }
+
+    const options = getOptionsForFrequency(input.value);
+    const nextPlaylistNameFormat = options[0]?.value ?? "";
+
+    void saveSettings({
+      playlistFrequency: input.value,
+      playlistNameFormat: nextPlaylistNameFormat,
+    });
+  });
+}
 
 checkAuth();

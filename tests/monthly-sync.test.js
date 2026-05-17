@@ -18,6 +18,18 @@ describe("formatPlaylistName", () => {
 
     expect(formatPlaylistName(date, "%Y-%m")).toBe("2026-01");
   });
+
+  test("supports quarter tokens", () => {
+    const date = new Date("2026-05-07T10:00:00Z");
+
+    expect(formatPlaylistName(date, "Q%Q %Y")).toBe("Q2 2026");
+  });
+
+  test("supports season tokens", () => {
+    const date = new Date("2026-11-07T10:00:00Z");
+
+    expect(formatPlaylistName(date, "%S %Y")).toBe("Fall 2026");
+  });
 });
 
 describe("filterNewSongs", () => {
@@ -57,6 +69,32 @@ describe("groupSongsByPlaylistName", () => {
     expect(groups.map((group) => group.name)).toEqual(["2026-05", "2026-06"]);
     expect(groups[0].songs.map((song) => song.id)).toEqual(["1"]);
     expect(groups[1].songs.map((song) => song.id)).toEqual(["2", "3"]);
+  });
+
+  test("groups quarterly formats into the same playlist for three months", () => {
+    const songs = [
+      {
+        id: "1",
+        addedAt: new Date("2026-01-03T00:00:00Z"),
+      },
+      {
+        id: "2",
+        addedAt: new Date("2026-03-18T00:00:00Z"),
+      },
+      {
+        id: "3",
+        addedAt: new Date("2026-04-02T00:00:00Z"),
+      },
+    ];
+
+    const groups = groupSongsByPlaylistName(songs, "%S %Y");
+
+    expect(groups.map((group) => group.name)).toEqual([
+      "Winter 2026",
+      "Spring 2026",
+    ]);
+    expect(groups[0].songs.map((song) => song.id)).toEqual(["1", "2"]);
+    expect(groups[1].songs.map((song) => song.id)).toEqual(["3"]);
   });
 });
 

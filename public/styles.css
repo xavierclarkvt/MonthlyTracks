@@ -297,6 +297,20 @@ h3 {
   border: 1px solid rgba(37, 30, 20, 0.08);
 }
 
+.setting-row-stack {
+  align-items: flex-start;
+}
+
+.setting-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.setting-label {
+  font-weight: 500;
+}
+
 .toggle-label {
   display: flex;
   flex-direction: column;
@@ -354,6 +368,69 @@ h3 {
   cursor: wait;
 }
 
+.setting-select {
+  min-width: 13rem;
+  border: 1px solid rgba(37, 30, 20, 0.14);
+  border-radius: 0.9rem;
+  padding: 0.8rem 1rem;
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.setting-select:disabled {
+  opacity: 0.6;
+}
+
+.segmented-control {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border-radius: 1rem;
+  background: rgba(34, 27, 19, 0.08);
+}
+
+.segmented-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.segmented-option input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.segmented-option span {
+  display: block;
+  min-width: 6.5rem;
+  padding: 0.7rem 1rem;
+  border-radius: 0.8rem;
+  text-align: center;
+  font-weight: 500;
+  color: var(--muted);
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.segmented-option input:checked + span {
+  color: white;
+  background: linear-gradient(
+    135deg,
+    var(--accent) 0%,
+    var(--accent-strong) 100%
+  );
+  box-shadow: 0 8px 18px rgba(15, 143, 91, 0.18);
+}
+
+.segmented-option input:disabled + span {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 @media (max-width: 700px) {
   .shell {
     width: min(100vw - 1rem, 72rem);
@@ -369,5 +446,14 @@ h3 {
   .stats,
   .details {
     grid-template-columns: 1fr;
+  }
+
+  .setting-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .setting-select {
+    width: 100%;
   }
 }
