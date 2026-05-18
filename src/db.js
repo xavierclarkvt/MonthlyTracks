@@ -224,6 +224,11 @@ export class SpotifyMonthlySavesDatabase {
         autoSyncEnabled !== undefined ? (autoSyncEnabled ? 1 : 0) : undefined,
       playlist_name_format: playlistNameFormat,
       playlist_frequency: playlistFrequency,
+      // reset the last_checked to make new playlist create correctly after playlist name / frequency change
+      last_checked:
+        playlistNameFormat !== undefined || playlistFrequency !== undefined
+          ? null
+          : undefined,
     };
 
     const entries = Object.entries(fields).filter(([, v]) => v !== undefined);
