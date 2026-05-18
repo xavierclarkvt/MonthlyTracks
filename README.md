@@ -1,12 +1,35 @@
-# spotify monthly saves
+```text
+ __  __             _   _     _         _______             _
+|  \/  |           | | | |   | |       |__   __|           | |
+| \  / | ___  _ __ | |_| |__ | |_ _   _   | |_ __ __ _  ___| | _____
+| |\/| |/ _ \| '_ \| __| '_ \| __| | | |  | | '__/ _` |/ __| |/ / __|
+| |  | | (_) | | | | |_| | | | |_| |_| |  | | | | (_| | (__|   <\__ \
+|_|  |_|\___/|_| |_|\__|_| |_|\__|\__, |  |_|_|  \__,_|\___|_|\_\___/
+                  __/ |
+                   |___/
+```
 
-Manual Bun CLI plus a lightweight Bun web server: both entrypoints read your liked songs, find only the songs newer than a saved threshold, create or reuse month playlists, skip duplicates already in those playlists, and add tracks in chronological month order.
+# MonthlyTracks
+
+MonthlyTracks is a Bun web app that connects to Spotify, reads your Liked Songs, and sorts them into monthly or quarterly playlists. It is meant for people who want an easy way to revisit what they were saving during a specific month, season, or quarter.
+
+The app uses Bun's built-in HTTP server and SQLite support. There are no runtime dependencies beyond Bun.
 
 ## Runtime
 
 - Bun 1.2+
-- No runtime dependencies beyond Bun's built-ins
-- Spotify app credentials and a user refresh token
+- SQLite via `bun:sqlite`
+
+## Features
+
+- Spotify OAuth login flow
+- Automatic background sync every 5 minutes for connected users
+- Manual test sync from the dashboard
+- Monthly or quarterly playlist grouping
+- Custom playlist naming formats
+- SQLite-backed user storage and sync history
+- Encrypted refresh-token storage using `COOKIE_SECRET`
+- Account deletion from the dashboard
 
 ## Environment variables
 
@@ -14,81 +37,42 @@ Required:
 
 - `CLIENT_ID`
 - `CLIENT_SECRET`
-- `SPOTIFY_REFRESH_TOKEN`
+- `COOKIE_SECRET`
+- `SPOTIFY_REDIRECT_URI`
 
-Optional:
-
-- `PLAYLIST_NAME_FORMAT`: playlist naming pattern. Default: `%b '%y` which yields names like `May '26`.
-- `SPOTIFY_REDIRECT_URI`: required for the browser OAuth flow. Default: `http://127.0.0.1:3000/auth/callback`.
-- `COOKIE_SECRET`: required for encrypted refresh-token storage in SQLite.
-
-Bun loads `.env` automatically, so copying `.env.example` to `.env` is enough for local runs.
+`COOKIE_SECRET` is used for signed session cookies and for encrypting stored Spotify refresh tokens in SQLite.
 
 ## Spotify app setup
 
 1. Create an app in the Spotify developer dashboard.
-2. Add a redirect URI that matches `SPOTIFY_REDIRECT_URI`. The default in this repo is `http://127.0.0.1:3000/auth/callback`.
-3. Copy the app's client ID and client secret into `.env`.
+2. Add a redirect URI that exactly matches `SPOTIFY_REDIRECT_URI`.
+3. Copy `.env.example` to `.env` and fill in your Spotify client credentials.
 
-## One-time refresh token bootstrap
+The default callback route in this app is `/auth/callback`.
 
-The main sync script does not run a browser OAuth flow. Instead, use the helper once to mint a refresh token and then keep that refresh token in `.env`.
-
-1. Set `CLIENT_ID`, `CLIENT_SECRET`, and optionally `SPOTIFY_REDIRECT_URI`.
-2. Run:
-
-```sh
-bun run bootstrap-token
-```
-
-3. Open the printed Spotify authorization URL.
-4. Approve the requested scopes.
-5. Copy the full redirected URL from the browser address bar.
-6. Exchange it for a refresh token:
-
-```sh
-bun run bootstrap-token --callback-url "http://127.0.0.1:3000/callback?code=..."
-```
-
-7. Copy the printed value into `SPOTIFY_REFRESH_TOKEN` in `.env`.
-
-The requested scopes are:
-
-- `user-library-read`
-- `playlist-read-private`
-- `playlist-modify-private`
-- `playlist-modify-public`
-
-## Run the web UI
+## Running the app
 
 ```sh
 bun run start
 ```
 
-Then open `http://127.0.0.1:3000` and click `Sync Now`.
+Then open `http://127.0.0.1:3000`.
 
-The browser sign-in flow uses `SPOTIFY_REDIRECT_URI`, and the callback route in this app is `/auth/callback`.
+From there:
 
-The current pre-OAuth sync path still uses `.env` Spotify credentials, but its checkpoint now lives in SQLite instead of a JSON state file.
+1. Sign in with Spotify.
+2. You will be redirected to the dashboard.
+3. MonthlyTracks will continue checking for new liked songs every 5 minutes.
+4. You can also run a manual `Test Sync` from the dashboard to verify what would be picked up immediately.
 
-On startup, the server also creates `data/spotify-monthly-saves.db` and ensures the `users` and `sync_history` tables exist for the multi-user phases.
+On startup, the server creates `data/spotify-monthly-saves.db` if needed and ensures the `users` and `sync_history` tables exist.
 
-Before Phase 3 OAuth exists, the sync route uses the Spotify account behind `SPOTIFY_REFRESH_TOKEN` as the row key in `users`, stores the encrypted refresh token there, and persists `last_checked` in SQLite. Re-running uses that value to minimize Spotify API calls.
+## How syncing works
 
-Threshold precedence is:
-
-1. `LAST_CHECKED`
-2. `users.last_checked`
-3. Start of the current UTC month
-
-## Behavior notes
-
-- Saved tracks are fetched iteratively in pages of 50 until the threshold is crossed.
-- Playlists are fetched with pagination.
-- Playlist tracks are fetched with pagination before duplicate checks.
-- `429 Retry-After` responses are retried automatically.
-- `401` responses trigger one access-token refresh and retry.
-- Tracks are added in chronological order within each month playlist.
+- New users default to syncing songs saved since the start of the current UTC month.
+- Returning users resume from their stored `last_checked` timestamp in SQLite.
+- Songs can be grouped into monthly or quarterly playlists.
+- Changing playlist cadence or naming format resets the stored sync checkpoint so future playlists are created using the new settings.
 
 ## Tests
 
@@ -96,25 +80,12 @@ Threshold precedence is:
 bun test
 ```
 
-Current automated coverage is intentionally lightweight and focuses on pure logic:
+Current automated coverage focuses on the core sync and persistence logic:
 
-- playlist naming
+- playlist name formatting, including quarter and season tokens
 - new-song filtering
-- chronological month grouping
-- default threshold calculation
-- SQLite schema initialization and refresh-token encryption helpers
-
-## Manual verification checklist
-
-1. Run `bun run sync` with a test or real Spotify account and confirm it creates the expected month playlist and adds only unsynced liked songs.
-2. Run it again immediately and confirm it prints `No new songs` or only reports duplicates, with no new inserts.
-3. Test with liked songs spanning at least two months and confirm they land in the correct playlist names.
-4. Validate pagination with more than 50 liked songs and more than 100 tracks in a target playlist.
-5. Inspect the `users.last_checked` value in SQLite and confirm threshold behavior matches `LAST_CHECKED` or the persisted timestamp you expect.
-6. Run `bun run start`, load `http://127.0.0.1:3000`, and confirm clicking `Sync Now` shows the latest songs found, added, and skipped counts.
-
-## Non-goals in this migration
-
-- GitHub Actions automation was not migrated in this change.
-- No external OAuth client library was added.
-- No browser app or callback server is included.
+- chronological playlist grouping
+- default sync threshold calculation
+- SQLite schema initialization
+- refresh-token encryption and decryption
+- sync checkpoint persistence and sync history recording
