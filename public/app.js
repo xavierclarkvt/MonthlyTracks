@@ -222,4 +222,12 @@ authPromise.then((data) => {
   if (!data.authenticated) return; // shared.js handles the redirect
   void loadSettings();
   void loadStats();
+
+  // show a welcome message on first sign-in
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("welcome") === "1") {
+    const banner = document.getElementById("welcome-banner");
+    if (banner) banner.hidden = false;
+    history.replaceState(null, "", window.location.pathname);
+  }
 });
