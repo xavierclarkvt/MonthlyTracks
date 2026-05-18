@@ -216,6 +216,24 @@ const router = createRouter([
     },
   },
   {
+    method: "GET",
+    pathname: "/api/stats",
+    async handler(request) {
+      const { userId, user, error } = await getAuthenticatedUser(request);
+      if (error) return error;
+
+      const totalSongsAdded = database.getTotalSongsAdded(userId);
+
+      return json({
+        ok: true,
+        stats: {
+          createdAt: user.createdAt?.toISOString() ?? null,
+          totalSongsAdded,
+        },
+      });
+    },
+  },
+  {
     method: "POST",
     pathname: "/api/account/delete",
     async handler(request) {

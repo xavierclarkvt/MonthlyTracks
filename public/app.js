@@ -6,6 +6,8 @@ const songsAdded = document.getElementById("songs-added");
 const songsSkipped = document.getElementById("songs-skipped");
 const resultMeta = document.getElementById("result-meta");
 const resultMessage = document.getElementById("result-message");
+const statMemberSince = document.getElementById("stat-member-since");
+const statTotalSongs = document.getElementById("stat-total-songs");
 const autoSyncToggle = document.getElementById("auto-sync-toggle");
 const playlistNameFormatSelect = document.getElementById(
   "playlist-name-format"
@@ -210,8 +212,31 @@ for (const input of playlistFrequencyInputs) {
   });
 }
 
+// ─── Stats ────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const response = await fetch("/api/stats");
+    const data = await response.json();
+    if (!data.ok) return;
+
+    if (data.stats.createdAt) {
+      statMemberSince.textContent = new Date(
+        data.stats.createdAt
+      ).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+      });
+    }
+
+    statTotalSongs.textContent = String(data.stats.totalSongsAdded);
+  } catch {
+    // leave defaults
+  }
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────
 authPromise.then((data) => {
   if (!data.authenticated) return; // shared.js handles the redirect
   void loadSettings();
+  void loadStats();
 });

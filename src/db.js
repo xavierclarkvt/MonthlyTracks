@@ -268,6 +268,16 @@ export class SpotifyMonthlySavesDatabase {
     return rows.map((row) => row.id);
   }
 
+  getTotalSongsAdded(userId) {
+    const row = this.db
+      .query(
+        `SELECT COALESCE(SUM(songs_added), 0) AS total FROM sync_history WHERE user_id = ?`
+      )
+      .get(userId);
+
+    return Number(row.total);
+  }
+
   deleteUser(userId) {
     this.db.query("DELETE FROM users WHERE id = ?").run(userId);
   }
