@@ -39,6 +39,26 @@ function getPublicFilePath(pathname) {
   return filePath;
 }
 
+async function getAuthenticatedUser(request) {
+  const userId = await getAuthenticatedUserId(request, auth.cookieSecret);
+
+  if (!userId) {
+    return {
+      error: json({ ok: false, error: "Not authenticated" }, { status: 401 }),
+    };
+  }
+
+  const user = database.getUser(userId);
+
+  if (!user) {
+    return {
+      error: json({ ok: false, error: "User not found" }, { status: 404 }),
+    };
+  }
+
+  return { userId, user };
+}
+
 async function serveStatic(pathname) {
   const filePath = getPublicFilePath(pathname);
 
@@ -80,11 +100,8 @@ const router = createRouter([
     method: "POST",
     pathname: "/api/sync",
     async handler(request) {
-      const userId = await getAuthenticatedUserId(request, auth.cookieSecret);
-
-      if (!userId) {
-        return json({ ok: false, error: "Not authenticated" }, { status: 401 });
-      }
+      const { userId, error } = await getAuthenticatedUser(request);
+      if (error) return error;
 
       try {
         const { config, result } = await runMonthlySync({
@@ -120,17 +137,8 @@ const router = createRouter([
     method: "GET",
     pathname: "/api/settings",
     async handler(request) {
-      const userId = await getAuthenticatedUserId(request, auth.cookieSecret);
-
-      if (!userId) {
-        return json({ ok: false, error: "Not authenticated" }, { status: 401 });
-      }
-
-      const user = database.getUser(userId);
-
-      if (!user) {
-        return json({ ok: false, error: "User not found" }, { status: 404 });
-      }
+      const { userId, user, error } = await getAuthenticatedUser(request);
+      if (error) return error;
 
       return json({
         ok: true,
@@ -153,20 +161,10 @@ const router = createRouter([
     method: "POST",
     pathname: "/api/settings",
     async handler(request) {
-      const userId = await getAuthenticatedUserId(request, auth.cookieSecret);
-
-      if (!userId) {
-        return json({ ok: false, error: "Not authenticated" }, { status: 401 });
-      }
-
-      const user = database.getUser(userId);
-
-      if (!user) {
-        return json({ ok: false, error: "User not found" }, { status: 404 });
-      }
+      const { userId, user, error } = await getAuthenticatedUser(request);
+      if (error) return error;
 
       const body = await request?.json();
-
       if (!body || Array.isArray(body)) {
         return json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
       }
@@ -215,6 +213,25 @@ const router = createRouter([
           playlistFrequency: updatedUser.playlistFrequency,
         },
       });
+    },
+  },
+  {
+    method: "POST",
+    pathname: "/api/account/delete",
+    async handler(request) {
+      const { userId, error } = await getAuthenticatedUser(request);
+      if (error) return error;
+
+      database.deleteUser(userId);
+
+      return json(
+        { ok: true },
+        {
+          headers: {
+            "Set-Cookie": "session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
+          },
+        }
+      );
     },
   },
 ]);

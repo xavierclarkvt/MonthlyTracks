@@ -262,6 +262,10 @@ export class SpotifyMonthlySavesDatabase {
 
     return rows.map((row) => row.id);
   }
+
+  deleteUser(userId) {
+    this.db.query("DELETE FROM users WHERE id = ?").run(userId);
+  }
 }
 
 export async function initializeDatabase({

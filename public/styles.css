@@ -158,9 +158,22 @@ code, pre { font-family: var(--font-mono); }
   border-color: #d0d0d0;
   color: var(--text);
 }
+.btn-danger {
+  background: #e53e3e;
+  border-color: #e53e3e;
+  color: #fff;
+}
+.btn-danger:hover:not(:disabled) {
+  background: #c53030;
+  border-color: #c53030;
+}
 .btn-lg {
   padding: 0.6875rem 0.875rem;
   font-size: 1rem;
+}
+.btn-wide {
+  display: flex;
+  width: 100%;
 }
 .hero-btn {
   min-width: 11.5rem;
@@ -570,6 +583,64 @@ code, pre { font-family: var(--font-mono); }
 
 /* ── Inline form ─────────────────────────────────────────────────────────── */
 .inline-form { display: inline; margin: 0; padding: 0; }
+
+/* ── Delete account section ──────────────────────────────────────────────── */
+.delete-section {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── Confirm delete overlay ──────────────────────────────────────────────── */
+.confirm-overlay {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  padding: var(--px);
+}
+.confirm-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 2rem;
+  width: 100%;
+  max-width: 420px;
+}
+.confirm-card h2 {
+  margin-bottom: 1rem;
+}
+.confirm-card > p {
+  margin-bottom: 0.625rem;
+}
+.confirm-list {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 1rem;
+}
+.confirm-list li {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  margin-bottom: 0.125rem;
+}
+.confirm-note {
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+.confirm-note strong { color: var(--text); }
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+.confirm-error {
+  margin-top: 0.875rem;
+  font-size: 0.875rem;
+  color: #c53030;
+  margin-bottom: 0;
+}
 
 /* ── Responsive – 801px+ ────────────────────────────────────────────────── */
 @media (min-width: 801px) {
