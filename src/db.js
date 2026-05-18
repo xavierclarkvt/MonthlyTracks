@@ -77,7 +77,6 @@ export class SpotifyMonthlySavesDatabase {
             encrypted_refresh_token,
             last_checked,
             playlist_name_format,
-            auto_sync_enabled,
             playlist_frequency,
             created_at,
             updated_at
@@ -97,7 +96,6 @@ export class SpotifyMonthlySavesDatabase {
       encryptedRefreshToken: row.encrypted_refresh_token,
       lastChecked: row.last_checked ? new Date(row.last_checked) : null,
       playlistNameFormat: row.playlist_name_format,
-      autoSyncEnabled: row.auto_sync_enabled === 1,
       playlistFrequency: row.playlist_frequency,
       createdAt: row.created_at ? new Date(row.created_at) : null,
       updatedAt: row.updated_at ? new Date(row.updated_at) : null,
@@ -213,15 +211,8 @@ export class SpotifyMonthlySavesDatabase {
     return Number(result.lastInsertRowid);
   }
 
-  updateSettings({
-    userId,
-    autoSyncEnabled,
-    playlistNameFormat,
-    playlistFrequency,
-  }) {
+  updateSettings({ userId, playlistNameFormat, playlistFrequency }) {
     const fields = {
-      auto_sync_enabled:
-        autoSyncEnabled !== undefined ? (autoSyncEnabled ? 1 : 0) : undefined,
       playlist_name_format: playlistNameFormat,
       playlist_frequency: playlistFrequency,
       // reset the last_checked to make new playlist create correctly after playlist name / frequency change
@@ -255,8 +246,7 @@ export class SpotifyMonthlySavesDatabase {
         `
         SELECT id
         FROM users
-        WHERE auto_sync_enabled = 1
-          AND (
+        WHERE (
             last_checked IS NULL
             OR last_checked < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-5 minutes')
           )
@@ -303,7 +293,6 @@ export async function initializeDatabase({
       encrypted_refresh_token TEXT NOT NULL,
       last_checked TEXT,
       playlist_name_format TEXT NOT NULL DEFAULT '"%B %Y"',
-      auto_sync_enabled INTEGER NOT NULL DEFAULT 1 CHECK (auto_sync_enabled IN (0, 1)),
       playlist_frequency TEXT NOT NULL DEFAULT 'monthly' CHECK (playlist_frequency IN ('monthly', 'quarterly')),
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))

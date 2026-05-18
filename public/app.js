@@ -8,7 +8,6 @@ const resultMeta = document.getElementById("result-meta");
 const resultMessage = document.getElementById("result-message");
 const statMemberSince = document.getElementById("stat-member-since");
 const statTotalSongs = document.getElementById("stat-total-songs");
-const autoSyncToggle = document.getElementById("auto-sync-toggle");
 const playlistNameFormatSelect = document.getElementById(
   "playlist-name-format"
 );
@@ -18,16 +17,11 @@ const playlistFrequencyInputs = document.querySelectorAll(
 
 let formatOptions = [];
 let currentSettings = {
-  autoSyncEnabled: false,
   playlistNameFormat: "",
   playlistFrequency: "monthly",
 };
 
 // ─── Settings helpers ─────────────────────────────────────────────────────
-function setAutoSyncState(enabled) {
-  autoSyncToggle.setAttribute("aria-checked", String(enabled));
-}
-
 function setPlaylistFrequencyState(playlistFrequency) {
   for (const input of playlistFrequencyInputs) {
     input.checked = input.value === playlistFrequency;
@@ -72,7 +66,6 @@ function renderPlaylistNameOptions(playlistFrequency, selectedValue) {
 }
 
 function setSettingsDisabled(disabled) {
-  autoSyncToggle.disabled = disabled;
   playlistNameFormatSelect.disabled = disabled;
   for (const input of playlistFrequencyInputs) input.disabled = disabled;
 }
@@ -84,7 +77,6 @@ async function loadSettings() {
     if (data.ok) {
       formatOptions = data.formatOptions ?? [];
       applySettings({
-        autoSyncEnabled: data.settings.autoSyncEnabled,
         playlistNameFormat: data.settings.playlistNameFormat,
         playlistFrequency: data.settings.playlistFrequency,
       });
@@ -96,7 +88,6 @@ async function loadSettings() {
 
 function applySettings(settings) {
   currentSettings = { ...settings };
-  setAutoSyncState(currentSettings.autoSyncEnabled);
   setPlaylistFrequencyState(currentSettings.playlistFrequency);
   currentSettings.playlistNameFormat = renderPlaylistNameOptions(
     currentSettings.playlistFrequency,
@@ -108,10 +99,6 @@ async function saveSettings(field, value) {
   const updates =
     typeof field === "string" && field.length > 0 ? { [field]: value } : field;
   const previousSettings = { ...currentSettings };
-
-  if (updates.autoSyncEnabled !== undefined) {
-    setAutoSyncState(updates.autoSyncEnabled);
-  }
 
   if (updates.playlistFrequency !== undefined) {
     setPlaylistFrequencyState(updates.playlistFrequency);
@@ -186,16 +173,12 @@ async function runSync() {
   } finally {
     syncButton.disabled = false;
     syncButton.textContent = "Test Sync";
+    void loadStats();
   }
 }
 
 // ─── Event listeners ──────────────────────────────────────────────────────
 syncButton.addEventListener("click", () => void runSync());
-
-autoSyncToggle.addEventListener("click", () => {
-  const nextValue = autoSyncToggle.getAttribute("aria-checked") !== "true";
-  void saveSettings("autoSyncEnabled", nextValue);
-});
 
 playlistNameFormatSelect.addEventListener("change", () => {
   void saveSettings("playlistNameFormat", playlistNameFormatSelect.value);

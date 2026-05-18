@@ -110,22 +110,12 @@ describe("initializeDatabase", () => {
       playlistNameFormat: "%Y-%m",
     });
 
-    const afterAutoSync = database.updateSettings({
-      userId: "spotify-user-1",
-      autoSyncEnabled: true,
-    });
-
-    expect(afterAutoSync.autoSyncEnabled).toBe(true);
-    expect(afterAutoSync.playlistNameFormat).toBe("%Y-%m");
-    expect(afterAutoSync.playlistFrequency).toBe("monthly");
-
     const afterFormatAndFrequency = database.updateSettings({
       userId: "spotify-user-1",
       playlistNameFormat: "Q%Q %Y",
       playlistFrequency: "quarterly",
     });
 
-    expect(afterFormatAndFrequency.autoSyncEnabled).toBe(true);
     expect(afterFormatAndFrequency.playlistNameFormat).toBe("Q%Q %Y");
     expect(afterFormatAndFrequency.playlistFrequency).toBe("quarterly");
 

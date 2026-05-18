@@ -143,7 +143,6 @@ const router = createRouter([
       return json({
         ok: true,
         settings: {
-          autoSyncEnabled: user.autoSyncEnabled,
           playlistNameFormat: user.playlistNameFormat,
           playlistFrequency: user.playlistFrequency,
         },
@@ -170,8 +169,6 @@ const router = createRouter([
       }
 
       const validators = {
-        autoSyncEnabled: (v) =>
-          typeof v === "boolean" || "autoSyncEnabled must be a boolean",
         playlistNameFormat: (v) =>
           (typeof v === "string" &&
             PLAYLIST_NAME_FORMAT_OPTIONS.some((o) => o.value === v)) ||
@@ -208,7 +205,6 @@ const router = createRouter([
       return json({
         ok: true,
         settings: {
-          autoSyncEnabled: updatedUser.autoSyncEnabled,
           playlistNameFormat: updatedUser.playlistNameFormat,
           playlistFrequency: updatedUser.playlistFrequency,
         },
