@@ -227,7 +227,7 @@ export function createAuthHandlers({ database, env = process.env }) {
       return new Response(null, {
         status: 302,
         headers: [
-          ["Location", "/"],
+          ["Location", "/dashboard.html"],
           ["Set-Cookie", sessionCookie],
           [
             "Set-Cookie",

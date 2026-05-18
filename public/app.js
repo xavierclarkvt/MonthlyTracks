@@ -1,19 +1,14 @@
-const authBar = document.querySelector("#auth-bar");
-const loggedOut = document.querySelector("#logged-out");
-const loggedIn = document.querySelector("#logged-in");
-const userName = document.querySelector("#user-name");
-const syncActions = document.querySelector("#sync-actions");
-const syncButton = document.querySelector("#sync-button");
-const statusPill = document.querySelector("#status-pill");
-const songsFound = document.querySelector("#songs-found");
-const songsAdded = document.querySelector("#songs-added");
-const songsSkipped = document.querySelector("#songs-skipped");
-const threshold = document.querySelector("#threshold");
-const message = document.querySelector("#message");
-const settingsPanel = document.querySelector("#settings-panel");
-const autoSyncToggle = document.querySelector("#auto-sync-toggle");
-const playlistNameFormatSelect = document.querySelector(
-  "#playlist-name-format"
+import { authPromise } from "/shared.js";
+
+const syncButton = document.getElementById("sync-button");
+const songsFound = document.getElementById("songs-found");
+const songsAdded = document.getElementById("songs-added");
+const songsSkipped = document.getElementById("songs-skipped");
+const resultMeta = document.getElementById("result-meta");
+const resultMessage = document.getElementById("result-message");
+const autoSyncToggle = document.getElementById("auto-sync-toggle");
+const playlistNameFormatSelect = document.getElementById(
+  "playlist-name-format"
 );
 const playlistFrequencyInputs = document.querySelectorAll(
   'input[name="playlist-frequency"]'
@@ -26,24 +21,9 @@ let currentSettings = {
   playlistFrequency: "monthly",
 };
 
-function setStatus(label, state) {
-  statusPill.textContent = label;
-  statusPill.dataset.state = state;
-}
-
-function setCounts(result) {
-  songsFound.textContent = String(result.newSongs);
-  songsAdded.textContent = String(result.added);
-  songsSkipped.textContent = String(result.skipped);
-}
-
-function setMessage(text) {
-  message.textContent = text;
-}
-
+// ─── Settings helpers ─────────────────────────────────────────────────────
 function setAutoSyncState(enabled) {
   autoSyncToggle.setAttribute("aria-checked", String(enabled));
-  autoSyncToggle.dataset.on = String(enabled);
 }
 
 function setPlaylistFrequencyState(playlistFrequency) {
@@ -89,47 +69,31 @@ function renderPlaylistNameOptions(playlistFrequency, selectedValue) {
   return resolvedValue;
 }
 
+function setSettingsDisabled(disabled) {
+  autoSyncToggle.disabled = disabled;
+  playlistNameFormatSelect.disabled = disabled;
+  for (const input of playlistFrequencyInputs) input.disabled = disabled;
+}
+
 async function loadSettings() {
   try {
     const response = await fetch("/api/settings");
     const data = await response.json();
-
     if (data.ok) {
       formatOptions = data.formatOptions ?? [];
-      currentSettings = {
+      applySettings({
         autoSyncEnabled: data.settings.autoSyncEnabled,
         playlistNameFormat: data.settings.playlistNameFormat,
         playlistFrequency: data.settings.playlistFrequency,
-      };
-
-      setAutoSyncState(currentSettings.autoSyncEnabled);
-      setPlaylistFrequencyState(currentSettings.playlistFrequency);
-      currentSettings.playlistNameFormat = renderPlaylistNameOptions(
-        currentSettings.playlistFrequency,
-        currentSettings.playlistNameFormat
-      );
+      });
     }
   } catch {
-    // Settings failed to load — leave toggle in default off state.
-  }
-}
-
-function setSettingsControlsDisabled(disabled) {
-  autoSyncToggle.disabled = disabled;
-  playlistNameFormatSelect.disabled = disabled;
-
-  for (const input of playlistFrequencyInputs) {
-    input.disabled = disabled;
+    // leave defaults
   }
 }
 
 function applySettings(settings) {
-  currentSettings = {
-    autoSyncEnabled: settings.autoSyncEnabled,
-    playlistNameFormat: settings.playlistNameFormat,
-    playlistFrequency: settings.playlistFrequency,
-  };
-
+  currentSettings = { ...settings };
   setAutoSyncState(currentSettings.autoSyncEnabled);
   setPlaylistFrequencyState(currentSettings.playlistFrequency);
   currentSettings.playlistNameFormat = renderPlaylistNameOptions(
@@ -161,7 +125,7 @@ async function saveSettings(field, value) {
     );
   }
 
-  setSettingsControlsDisabled(true);
+  setSettingsDisabled(true);
 
   try {
     const response = await fetch("/api/settings", {
@@ -180,46 +144,22 @@ async function saveSettings(field, value) {
   } catch {
     applySettings(previousSettings);
   } finally {
-    setSettingsControlsDisabled(false);
+    setSettingsDisabled(false);
   }
 }
 
-async function checkAuth() {
-  try {
-    const response = await fetch("/api/me");
-    const data = await response.json();
-
-    authBar.hidden = false;
-
-    if (data.authenticated) {
-      loggedIn.hidden = false;
-      userName.textContent = data.user.displayName;
-      syncActions.hidden = false;
-      settingsPanel.hidden = false;
-      setMessage('Press "Sync Now" to start.');
-      loadSettings();
-    } else {
-      loggedOut.hidden = false;
-    }
-  } catch {
-    authBar.hidden = false;
-    loggedOut.hidden = false;
-  }
-}
+// ─── Sync ─────────────────────────────────────────────────────────────────
 
 async function runSync() {
   syncButton.disabled = true;
-  setStatus("Running", "running");
-  setMessage("Sync in progress...");
+  syncButton.textContent = "Running…";
 
   try {
-    const response = await fetch("/api/sync", {
-      method: "POST",
-    });
+    const response = await fetch("/api/sync", { method: "POST" });
     const payload = await response.json();
 
     if (response.status === 401) {
-      window.location.href = "/auth/login";
+      window.location.replace("/");
       return;
     }
 
@@ -227,29 +167,28 @@ async function runSync() {
       throw new Error(payload.error || "Sync failed");
     }
 
-    setCounts(payload.result);
-    threshold.textContent = `${payload.threshold.source}: ${payload.threshold.value}`;
+    songsFound.textContent = String(payload.result.newSongs);
+    songsAdded.textContent = String(payload.result.added);
+    songsSkipped.textContent = String(payload.result.skipped);
 
-    if (payload.result.newSongs === 0) {
-      setMessage("No new songs were found.");
-    } else {
-      setMessage(
-        `Processed ${payload.result.newSongs} new song(s); ${payload.result.added} added and ${payload.result.skipped} skipped.`
-      );
-    }
+    resultMessage.textContent =
+      payload.result.newSongs === 0
+        ? "No new songs were found."
+        : `Processed ${payload.result.newSongs} new song(s); ${payload.result.added} added and ${payload.result.skipped} skipped.`;
 
-    setStatus("Completed", "success");
+    resultMeta.classList.add("visible");
   } catch (error) {
-    setStatus("Failed", "error");
-    setMessage(error instanceof Error ? error.message : String(error));
+    resultMessage.textContent =
+      error instanceof Error ? error.message : String(error);
+    resultMeta.classList.add("visible");
   } finally {
     syncButton.disabled = false;
+    syncButton.textContent = "Test Sync";
   }
 }
 
-syncButton.addEventListener("click", () => {
-  void runSync();
-});
+// ─── Event listeners ──────────────────────────────────────────────────────
+syncButton.addEventListener("click", () => void runSync());
 
 autoSyncToggle.addEventListener("click", () => {
   const nextValue = autoSyncToggle.getAttribute("aria-checked") !== "true";
@@ -262,18 +201,17 @@ playlistNameFormatSelect.addEventListener("change", () => {
 
 for (const input of playlistFrequencyInputs) {
   input.addEventListener("change", () => {
-    if (!input.checked) {
-      return;
-    }
-
+    if (!input.checked) return;
     const options = getOptionsForFrequency(input.value);
-    const nextPlaylistNameFormat = options[0]?.value ?? "";
-
     void saveSettings({
       playlistFrequency: input.value,
-      playlistNameFormat: nextPlaylistNameFormat,
+      playlistNameFormat: options[0]?.value ?? "",
     });
   });
 }
 
-checkAuth();
+// ─── Init ─────────────────────────────────────────────────────────────────
+authPromise.then((data) => {
+  if (!data.authenticated) return; // shared.js handles the redirect
+  void loadSettings();
+});

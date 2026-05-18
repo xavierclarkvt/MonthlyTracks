@@ -3,141 +3,261 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Spotify Monthly Saves</title>
+    <title>MonthlyTracks</title>
+    <meta
+      name="description"
+      content="Automatically organize your Spotify saved songs into monthly playlists. Free, open-source, and purpose-built." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
-    <script type="module" src="/app.js"></script>
+    <script type="module" src="/shared.js"></script>
   </head>
   <body>
-    <main class="shell">
-      <nav class="auth-bar" id="auth-bar" hidden>
-        <div id="logged-out" hidden>
-          <a href="/auth/login" class="connect-button">Connect with Spotify</a>
-        </div>
-        <div id="logged-in" hidden>
-          <span class="user-greeting">
-            Hello, <strong id="user-name"></strong>
-          </span>
-          <form action="/auth/logout" method="POST" class="inline-form">
-            <button type="submit" class="logout-button">Log out</button>
-          </form>
+    <div class="page-wrap">
+      <nav class="site-nav">
+        <div class="nav-inner">
+          <a href="/" class="nav-logo">MonthlyTracks</a>
+          <ul class="nav-links">
+            <li><a href="/" class="active">Home</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/#compare">Compare</a></li>
+          </ul>
+          <div class="nav-auth">
+            <a
+              href="/auth/login"
+              class="btn btn-primary header-btn"
+              data-auth="logged-out"
+              >Sign up</a
+            >
+            <span data-auth="logged-in" hidden>
+              <span class="nav-user-name" data-auth="user-name"></span>
+              <a href="/dashboard.html" class="btn btn-primary header-btn"
+                >Dashboard</a
+              >
+            </span>
+          </div>
         </div>
       </nav>
 
-      <section class="hero">
-        <h1>Run your Spotify monthly playlist sync from the browser.</h1>
-        <p class="lede">
-          Automatically organize your saved songs into monthly playlists.
-          Connect your Spotify account to get started.
-        </p>
-        <div class="actions" id="sync-actions" hidden>
-          <button id="sync-button" class="sync-button" type="button">
-            Sync Now
-          </button>
-          <span id="status-pill" class="status-pill">Idle</span>
+      <main class="main-content">
+        <div class="container">
+          <section class="hero">
+            <div class="hero-content">
+              <div class="hero-text">
+                <h1>
+                  Automatically organize your saved songs into monthly
+                  playlists.
+                </h1>
+                <p>
+                  Connect your Spotify account and MonthlyTracks will sort your
+                  liked songs into monthly or quarterly playlists (like "March
+                  '26") so you can find the song you saved while on that trip or
+                  while hanging out with that friend.
+                </p>
+                <div class="hero-cta">
+                  <a
+                    href="/auth/login"
+                    class="btn btn-primary btn-lg hero-btn"
+                    data-auth="logged-out"
+                    >Sign up with Spotify</a
+                  >
+                  <a
+                    href="/dashboard.html"
+                    class="btn btn-primary btn-lg hero-btn"
+                    data-auth="logged-in"
+                    hidden
+                    >Go to Dashboard</a
+                  >
+                  <a href="#compare" class="btn btn-outline btn-lg"
+                    >Learn more</a
+                  >
+                </div>
+              </div>
+              <div class="hero-image">
+                <img
+                  src="/assets/spot_mockup.png"
+                  alt="Phone showing Spotify library with monthly playlists"
+                  onload="this.style.opacity = 1" />
+              </div>
+            </div>
+          </section>
+
+          <section id="how-it-works" class="section">
+            <div class="page-header">
+              <h2>How it works</h2>
+            </div>
+
+            <div class="steps">
+              <div class="step">
+                <img
+                  src="/assets/heart-solid-full.svg"
+                  class="step-icon"
+                  alt=""
+                  aria-hidden="true"
+                  style="
+                    filter: invert(48%) sepia(79%) saturate(476%)
+                      hue-rotate(86deg) brightness(118%) contrast(119%);
+                  " />
+                <div class="step-text">
+                  <h3>Like a song</h3>
+                  <p>
+                    Add any song to your Liked Songs on Spotify, just like you
+                    normally would.
+                  </p>
+                </div>
+              </div>
+              <div class="step-arrow" aria-hidden="true">→</div>
+              <div class="step">
+                <img
+                  src="/assets/robot-solid-full.svg"
+                  class="step-icon"
+                  alt=""
+                  aria-hidden="true"
+                  style="
+                    filter: invert(42%) sepia(93%) saturate(477%)
+                      hue-rotate(180deg) brightness(96%) contrast(101%);
+                  " />
+                <div class="step-text">
+                  <h3>We check every 5 minutes</h3>
+                  <p>Our robots automatically detect new songs you've saved.</p>
+                </div>
+              </div>
+              <div class="step-arrow" aria-hidden="true">→</div>
+              <div class="step">
+                <img
+                  src="/assets/music-solid-full.svg"
+                  class="step-icon"
+                  alt=""
+                  aria-hidden="true"
+                  style="
+                    filter: invert(27%) sepia(97%) saturate(1083%)
+                      hue-rotate(336deg) brightness(97%) contrast(101%);
+                  " />
+                <div class="step-text">
+                  <h3>Sorted into a monthly playlist</h3>
+                  <p>
+                    A playlist is created for the current month and your song is
+                    added to it.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="compare" class="section">
+            <div class="page-header">
+              <h2>How MonthlyTracks compares</h2>
+            </div>
+
+            <div class="comparison-grid">
+              <div class="comparison-card featured">
+                <div class="comparison-card-header">
+                  <h3>MonthlyTracks <span class="badge">Free</span></h3>
+                </div>
+                <ul class="comparison-list">
+                  <li><strong>Completely free</strong></li>
+                  <li>Simple: sign up, it runs automatically</li>
+                  <li>Open-source: inspect or self-host</li>
+                  <li>Customizable playlist naming patterns</li>
+                </ul>
+              </div>
+
+              <div class="comparison-card">
+                <div class="comparison-card-header">
+                  <h3>IFTTT</h3>
+                </div>
+                <ul class="comparison-list">
+                  <li class="con">
+                    Costs $15/Month to access monthly song archiving
+                  </li>
+                  <li class="con">Limited customization of playlist names</li>
+                  <li class="con">Proprietary, closed platform</li>
+                </ul>
+              </div>
+
+              <div class="comparison-card">
+                <div class="comparison-card-header">
+                  <h3>Make</h3>
+                </div>
+                <ul class="comparison-list">
+                  <li class="con">
+                    Costs $28/Month to access Spotify integrations
+                  </li>
+                  <li class="con">No pre-built monthly song archiving tools</li>
+                  <li class="con">Proprietary, closed platform</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section id="faq" class="section">
+            <div class="page-header">
+              <h2>Frequently Asked Questions</h2>
+            </div>
+
+            <div class="faq-list">
+              <div class="faq-item">
+                <h3>How much does it cost?</h3>
+                <p>
+                  <strong>MonthlyTracks is completely free.</strong> There are
+                  no subscriptions, no ads, and no premium tiers.
+                </p>
+              </div>
+
+              <div class="faq-item">
+                <h3>Can I trust MonthlyTracks?</h3>
+                <p>
+                  <strong>Absolutely.</strong> We only store your Spotify user
+                  ID, display name, an encrypted refresh token, and sync
+                  timestamps. No listening history or any other personal data.
+                  You can also self-host MonthlyTracks using the
+                  <a
+                    href="https://github.com/xavierclarkvt/spotify-monthly-saves"
+                    >open-source code on GitHub</a
+                  >.
+                </p>
+              </div>
+
+              <div class="faq-item">
+                <h3>I need help / I have an idea</h3>
+                <p>
+                  <strong>I'd love to hear from you!</strong> Please reach out
+                  with any issues or feedback via our
+                  <a
+                    href="https://github.com/xavierclarkvt/spotify-monthly-saves/issues"
+                    >GitHub Issues page</a
+                  >
+                  or send us an email at
+                  <a href="mailto:monthlytracks@clar.cx"
+                    >monthlytracks@clar.cx</a
+                  >.
+                </p>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
+      </main>
 
-      <section class="panel" aria-live="polite">
-        <div class="panel-header">
-          <h2>Latest Result</h2>
-          <p>Counts come directly from the existing sync logic.</p>
-        </div>
-
-        <dl class="stats">
-          <div>
-            <dt>Songs Found</dt>
-            <dd id="songs-found">-</dd>
-          </div>
-          <div>
-            <dt>Added</dt>
-            <dd id="songs-added">-</dd>
-          </div>
-          <div>
-            <dt>Skipped</dt>
-            <dd id="songs-skipped">-</dd>
-          </div>
-        </dl>
-
-        <div class="details">
-          <div>
-            <h3>Threshold</h3>
-            <p id="threshold">No sync run yet.</p>
-          </div>
-          <div>
-            <h3>Notes</h3>
-            <pre id="message" class="message">
-Connect your Spotify account to sync.</pre
+      <footer class="site-footer">
+        <div class="footer-inner">
+          <nav class="footer-nav" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/#compare">Compare</a>
+            <a href="/dashboard.html" data-auth="logged-in">Dashboard</a>
+            <a href="https://github.com/xavierclarkvt/spotify-monthly-saves"
+              >Source Code</a
             >
-          </div>
+          </nav>
+          <p class="footer-disclaimer">
+            Spotify is a trademark of Spotify AB. MonthlyTracks is not
+            affiliated with or endorsed by Spotify.
+          </p>
         </div>
-      </section>
-
-      <section class="panel settings-panel" id="settings-panel" hidden>
-        <div class="panel-header">
-          <h2>Settings</h2>
-        </div>
-        <div class="setting-row">
-          <label class="toggle-label" for="auto-sync-toggle">
-            <span>Enable automatic daily sync</span>
-            <span class="toggle-hint"
-              >When enabled, your liked songs are synced once every 24
-              hours.</span
-            >
-          </label>
-          <button
-            id="auto-sync-toggle"
-            class="toggle-button"
-            type="button"
-            role="switch"
-            aria-checked="false">
-            <span class="toggle-track"><span class="toggle-knob"></span></span>
-          </button>
-        </div>
-        <div class="setting-row setting-row-stack">
-          <div class="setting-copy">
-            <label class="setting-label" for="playlist-frequency-monthly">
-              Playlist frequency
-            </label>
-            <p class="toggle-hint">
-              Choose whether new playlists are named by month or quarter.
-            </p>
-          </div>
-          <div
-            class="segmented-control"
-            role="radiogroup"
-            aria-label="Playlist frequency">
-            <label class="segmented-option">
-              <input
-                id="playlist-frequency-monthly"
-                type="radio"
-                name="playlist-frequency"
-                value="monthly"
-                checked />
-              <span>Monthly</span>
-            </label>
-            <label class="segmented-option">
-              <input type="radio" name="playlist-frequency" value="quarterly" />
-              <span>Quarterly</span>
-            </label>
-          </div>
-        </div>
-        <div class="setting-row">
-          <div class="setting-copy">
-            <label class="setting-label" for="playlist-name-format">
-              Playlist name
-            </label>
-            <p class="toggle-hint">
-              Pick the playlist title pattern used when saved songs are grouped.
-            </p>
-          </div>
-          <select id="playlist-name-format" class="setting-select"></select>
-        </div>
-      </section>
-    </main>
+      </footer>
+    </div>
   </body>
 </html>

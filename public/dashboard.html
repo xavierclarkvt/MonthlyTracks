@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard - MonthlyTracks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="dashboard">
+    <div class="page-wrap">
+      <nav class="site-nav">
+        <div class="nav-inner">
+          <a href="/" class="nav-logo">MonthlyTracks</a>
+          <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/#compare">Compare</a></li>
+          </ul>
+          <div class="nav-auth">
+            <a href="/auth/login" class="btn btn-primary" data-auth="logged-out"
+              >Sign up</a
+            >
+            <span data-auth="logged-in" hidden>
+              <span class="nav-user-name" data-auth="user-name"></span>
+              <form action="/auth/logout" method="POST" class="inline-form">
+                <button type="submit" class="btn btn-outline">Log out</button>
+              </form>
+            </span>
+          </div>
+        </div>
+      </nav>
+
+      <div id="auth-loading" class="auth-loading">Checking authentication…</div>
+
+      <main class="main-content" id="dashboard-content" hidden>
+        <div class="container">
+          <div class="page-header">
+            <h1>Hello, <span id="user-greeting"></span>!</h1>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>Settings</h2>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-copy">
+                <label class="setting-label" for="auto-sync-toggle"
+                  >Automatic daily sync</label
+                >
+                <p class="setting-hint">
+                  When enabled, your liked songs are synced automatically once
+                  every 5 minutes.
+                </p>
+              </div>
+              <div class="setting-control">
+                <button
+                  id="auto-sync-toggle"
+                  class="toggle-button"
+                  type="button"
+                  role="switch"
+                  aria-checked="false">
+                  <span class="toggle-knob"></span>
+                </button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-copy">
+                <label class="setting-label" for="playlist-frequency-monthly"
+                  >Playlist cadence</label
+                >
+                <p class="setting-hint">
+                  How often new playlists are created - group your liked songs
+                  by month or by quarter.
+                </p>
+              </div>
+              <div class="setting-control">
+                <div
+                  class="segmented-control"
+                  role="radiogroup"
+                  aria-label="Playlist cadence">
+                  <label class="segmented-option">
+                    <input
+                      id="playlist-frequency-monthly"
+                      type="radio"
+                      name="playlist-frequency"
+                      value="monthly"
+                      checked />
+                    <span>Monthly</span>
+                  </label>
+                  <label class="segmented-option">
+                    <input
+                      type="radio"
+                      name="playlist-frequency"
+                      value="quarterly" />
+                    <span>Quarterly</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-copy">
+                <label class="setting-label" for="playlist-name-format"
+                  >Playlist name format</label
+                >
+                <p class="setting-hint">
+                  The naming pattern used when songs are grouped into a new
+                  playlist.
+                </p>
+              </div>
+              <div class="setting-control">
+                <select
+                  id="playlist-name-format"
+                  class="setting-select"></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>Test Sync</h2>
+              <p>
+                Run a manual sync to see how many songs get picked up right now.
+              </p>
+            </div>
+            <div class="sync-bar">
+              <button id="sync-button" type="button" class="btn btn-primary">
+                Test Sync
+              </button>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-cell">
+                <span class="stat-value" id="songs-found">—</span>
+                <span class="stat-label">Songs Found</span>
+              </div>
+              <div class="stat-cell">
+                <span class="stat-value" id="songs-added">—</span>
+                <span class="stat-label">Added</span>
+              </div>
+              <div class="stat-cell">
+                <span class="stat-value" id="songs-skipped">—</span>
+                <span class="stat-label">Skipped</span>
+              </div>
+            </div>
+            <div class="result-meta" id="result-meta">
+              <pre class="result-message" id="result-message"></pre>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="footer-inner">
+          <nav class="footer-nav" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/#compare">Compare</a>
+            <a href="/dashboard.html" data-auth="logged-in">Dashboard</a>
+            <a href="https://github.com/xavierclarkvt/spotify-monthly-saves"
+              >Source Code</a
+            >
+          </nav>
+          <p class="footer-disclaimer">
+            Spotify is a trademark of Spotify AB. MonthlyTracks is not
+            affiliated with or endorsed by Spotify.
+          </p>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/shared.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
