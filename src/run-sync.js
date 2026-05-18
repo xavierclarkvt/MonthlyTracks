@@ -36,7 +36,7 @@ class Playlist {
     );
   }
 
-  async addSongs(songs, { log = console.log } = {}) {
+  async addSongs(songs) {
     await this.ensureSongIdsLoaded();
 
     const songsToAdd = [];
@@ -44,7 +44,6 @@ class Playlist {
 
     for (const song of songs) {
       if (this.songIds.has(song.id)) {
-        log(`${song.name} already in ${this.name}`);
         skipped += 1;
         continue;
       }
@@ -64,7 +63,6 @@ class Playlist {
 
       for (const song of batch) {
         this.songIds.add(song.id);
-        log(`${song.name} added to ${this.name}`);
       }
     }
 
@@ -93,7 +91,6 @@ class MonthlyPlaylistsSync {
 
   async createPlaylist(userId, name) {
     const playlist = await this.client.createPlaylist(userId, name);
-    console.log(`${name} was created`);
     return new Playlist(this.client, playlist);
   }
 
@@ -102,7 +99,6 @@ class MonthlyPlaylistsSync {
     const newSongs = filterNewSongs(savedSongs, this.lastChecked);
 
     if (newSongs.length === 0) {
-      console.log("No new songs");
       return { newSongs: 0, added: 0, skipped: 0 };
     }
 
