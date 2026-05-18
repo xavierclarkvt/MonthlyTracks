@@ -159,11 +159,11 @@ code, pre { font-family: var(--font-mono); }
   color: var(--text);
 }
 .btn-lg {
-  padding: 0.6875rem 1.25rem;
+  padding: 0.6875rem 0.875rem;
   font-size: 1rem;
 }
 .hero-btn {
-  min-width: 11rem;
+  min-width: 11.5rem;
 }
 .header-btn {
   min-width: 7rem;
@@ -206,7 +206,11 @@ code, pre { font-family: var(--font-mono); }
 
 /* ── Hero ────────────────────────────────────────────────────────────────── */
 .hero {
-  padding: 5rem 0 4rem;
+  padding: 5rem 2.5rem 4rem;
+  margin-inline: -2.5rem;
+  background: #a1edbd;
+  /* border: 1px solid rgba(29, 185, 84, 0.15); */
+  border-radius: 16px;
 }
 .hero-content {
   display: flex;
@@ -567,8 +571,8 @@ code, pre { font-family: var(--font-mono); }
 /* ── Inline form ─────────────────────────────────────────────────────────── */
 .inline-form { display: inline; margin: 0; padding: 0; }
 
-/* ── Responsive – 601px+ ────────────────────────────────────────────────── */
-@media (min-width: 601px) {
+/* ── Responsive – 801px+ ────────────────────────────────────────────────── */
+@media (min-width: 801px) {
   .footer-nav {
     flex-direction: row;
     flex-wrap: wrap;
@@ -577,12 +581,12 @@ code, pre { font-family: var(--font-mono); }
   }
 }
 
-/* ── Responsive – 600px ──────────────────────────────────────────────────── */
-@media (max-width: 600px) {
+/* ── Responsive – 800px and below ─────────────────────────────────────────── */
+@media (max-width: 800px) {
   :root { --px: 1rem; }
   h1 { font-size: 1.75rem; }
   h2 { font-size: 1.25rem; }
-  .hero { padding: 3rem 0 2.5rem; position: relative; }
+  .hero { padding: 3rem 1.5rem 2.5rem; position: relative; margin-inline: -0.6rem; }
   .hero-content {
     flex-direction: column;
     text-align: center;
@@ -590,7 +594,7 @@ code, pre { font-family: var(--font-mono); }
   .hero-image {
     position: absolute;
     right: calc(var(--px) * -1);
-    bottom: -4rem;
+    bottom: -7rem;
     width: 200px;
     opacity: 0.18;
     pointer-events: none;
@@ -637,6 +641,14 @@ code, pre { font-family: var(--font-mono); }
   }
   .step-arrow {
     transform: rotate(90deg);
+  }
+  .steps {
+    flex-direction: column;
+    gap: 0rem;
+  }
+  .comparison-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   .nav-links { display: none; }
   .nav-auth { margin-left: auto; }
