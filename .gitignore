@@ -1,0 +1,10 @@
+# Environment files
+.env
+.env.local
+
+# Bun / Node
+node_modules/
+
+# State and caches
+data/*
+!data/.gitkeep

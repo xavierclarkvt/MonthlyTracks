@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Delete Account - MonthlyTracks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="dashboard">
+    <div class="confirm-overlay">
+      <div class="confirm-card">
+        <h2>Delete your account?</h2>
+        <p>This will permanently delete:</p>
+        <ul class="confirm-list">
+          <li>Your MonthlyTracks account</li>
+          <li>Your settings</li>
+          <li>All sync history</li>
+        </ul>
+        <p class="confirm-note">
+          Your monthly / quarterly playlists will stop updating automatically.
+          Your Spotify playlists will <strong>not</strong> be affected.
+        </p>
+        <div class="confirm-actions">
+          <a href="/dashboard.html" class="btn btn-outline" style="width: 50%"
+            >Cancel</a
+          >
+          <button
+            id="confirm-delete-btn"
+            type="button"
+            class="btn btn-danger"
+            style="width: 50%">
+            Delete My Account
+          </button>
+        </div>
+        <p class="confirm-error" id="confirm-error" hidden></p>
+      </div>
+    </div>
+
+    <script type="module">
+      import { authPromise } from "/shared.js";
+      // shared.js handles redirect to / if not authenticated (data-page="dashboard")
+
+      document.querySelector(".confirm-overlay").addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) window.location.href = "/dashboard.html";
+      });
+
+      const btn = document.getElementById("confirm-delete-btn");
+      const errorEl = document.getElementById("confirm-error");
+
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "Deleting…";
+        errorEl.hidden = true;
+
+        try {
+          const res = await fetch("/api/account/delete", { method: "POST" });
+          const data = await res.json();
+
+          if (data.ok) {
+            window.location.replace("/");
+          } else {
+            throw new Error(data.error || "Unknown error");
+          }
+        } catch (err) {
+          btn.disabled = false;
+          btn.textContent = "Delete My Account";
+          errorEl.textContent =
+            err.message || "Something went wrong. Please try again.";
+          errorEl.hidden = false;
+        }
+      });
+    </script>
+  </body>
+</html>

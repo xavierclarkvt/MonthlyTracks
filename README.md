@@ -1,94 +1,91 @@
-```
- ___ _ __   ___ | |_(_)/ _|_   _ 
-/ __| '_ \ / _ \| __| | |_| | | |
-\__ \ |_) | (_) | |_| |  _| |_| |
-|___/ .__/ \___/ \__|_|_|  \__, |
-    |_|                _   |___/ _
- _ __ ___   ___  _ __ | |_| |__ | |_   _ 
-| '_ ` _ \ / _ \| '_ \| __| '_ \| | | | |
-| | | | | | (_) | | | | |_| | | | | |_| |
-|_| |_| |_|\___/|_| |_|\__|_| |_|_|\__, |
-       _             _ _     _     |___/ 
- _ __ | | __ _ _   _| (_)___| |_ ___ 
-| '_ \| |/ _` | | | | | / __| __/ __|
-| |_) | | (_| | |_| | | \__ \ |_\__ \
-| .__/|_|\__,_|\__, |_|_|___/\__|___/
-|_|            |___/                 
+```text
+ __  __             _   _     _         _______             _
+|  \/  |           | | | |   | |       |__   __|           | |
+| \  / | ___  _ __ | |_| |__ | |_ _   _   | |_ __ __ _  ___| | _____
+| |\/| |/ _ \| '_ \| __| '_ \| __| | | |  | | '__/ _` |/ __| |/ / __|
+| |  | | (_) | | | | |_| | | | |_| |_| |  | | | | (_| | (__|   <\__ \
+|_|  |_|\___/|_| |_|\__|_| |_|\__|\__, |  |_|_|  \__,_|\___|_|\_\___/
+                  __/ |
+                   |___/
 ```
 
-### 🧐 What is this?
-The songs you add to your library or give a like to will be included in a monthly playlist (e.g., "Jun '23"), enabling you to revisit and discover the songs you liked 7 months ago during a memorable road trip.
+# MonthlyTracks
 
-Like this:
+MonthlyTracks is a Bun web app that connects to Spotify, reads your Liked Songs, and sorts them into monthly or quarterly playlists. It is meant for people who want an easy way to revisit what they were saving during a specific month, season, or quarter.
 
-<img width="280" alt="results" src="https://github.com/tejxv/spotify-monthly-saves/assets/54097365/3e18937d-5937-4f3d-bf00-64c7380eb61d">
+The app uses Bun's built-in HTTP server and SQLite support. There are no runtime dependencies beyond Bun.
 
+## Runtime
 
-### 🗿 Why not [IFTTT](https://ifttt.com/applets/rC5QtGu6-add-saved-songs-to-a-monthly-playlist)?
-I have been using that for years, but recently they paywalled it. 🥲
-### ✨ How does it work?
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github-production-user-asset-6210df.s3.amazonaws.com/54097365/244024820-29c2cff5-84ec-45e5-b6ad-b5447c2494d4.svg">
-  <source media="(prefers-color-scheme: light)" srcset="https://github-production-user-asset-6210df.s3.amazonaws.com/54097365/244024165-45dac8e5-66cd-44a0-9284-8d8881938000.svg">
-  <img alt="working illustration" src="https://user-images.githubusercontent.com/25423296/163456779-a8556205-d0a5-45e2-ac17-42d089e3c3f8.png">
-</picture>
+- Bun 1.2+
+- SQLite via `bun:sqlite`
 
+## Features
 
-### ⚙️ How do I set it up?
+- Spotify OAuth login flow
+- Automatic background sync every 5 minutes for connected users
+- Manual test sync from the dashboard
+- Monthly or quarterly playlist grouping
+- Custom playlist naming formats
+- SQLite-backed user storage and sync history
+- Encrypted refresh-token storage using `COOKIE_SECRET`
+- Account deletion from the dashboard
 
-To set up the repository and configure the necessary steps, follow these instructions:
+## Environment variables
 
-0. Make sure you have a GitHub account. If you don't have one, create an account at [github.com/signup](https://github.com/signup).
+Required:
 
-1. Fork this repository by clicking the "Fork" button at the top right of the repository page. This will create a copy of the repository under your GitHub account.
+- `CLIENT_ID`
+- `CLIENT_SECRET`
+- `COOKIE_SECRET`
+- `SPOTIFY_REDIRECT_URI`
 
-2. Obtain your `client_id` and `client_secret` from the Spotify Developer Dashboard:
+`COOKIE_SECRET` is used for signed session cookies and for encrypting stored Spotify refresh tokens in SQLite.
 
-   - Visit [developer.spotify.com](https://developer.spotify.com/) and log in with your Spotify account.
-   - Navigate to your [Dashboard.](https://developer.spotify.com/dashboard)
-   - Create a new app by clicking the "Create App" button.
-   - Provide a name and description for your app (you can use any name and description).
-   - In the Redirect URI field, enter `http://localhost:3000` and click "Save".
-   - Open the settings of your app and copy the `client_id` and `client_secret` to a notepad or any text editor. You will need these in the next steps.
+## Spotify app setup
 
-3. Before proceeding, make sure you have run the `main.py` file locally with your `client_id` and `client_secret` to authenticate your secret credentials. This step gives the necessary permissions to the app you created, allowing it to modify and create new playlists.
+1. Create an app in the Spotify developer dashboard.
+2. Add a redirect URI that exactly matches `SPOTIFY_REDIRECT_URI`.
+3. Copy `.env.example` to `.env` and fill in your Spotify client credentials.
 
-    - Open fork in VS Code
-    - ⚠︎ Delete ``.cache`` file (spotify-monthly-saves/.cache)
-    - Run ``pip install spotipy``
-    - Run the code by pressing <kbd>Control</kbd> + <kbd>Option</kbd> + <kbd>N</kbd> (<kbd>Control</kbd> + <kbd>Alt</kbd> + <kbd>N</kbd> on Windows)
-    - A window will pop up asking you to Authorise the Spotify app, click authorise.
-4. Go to the "Settings" tab of your forked repository on GitHub, and navigate to "Secrets and variables" > "Actions".
+The default callback route in this app is `/auth/callback`.
 
-5. Add both the `client_id` and `client_secret` keys as secrets by clicking on "New repository secret" and entering the respective values.
+## Running the app
 
-6. Next, enable the workflow under the "Actions" tab by clicking the "I understand my workflows, go ahead and enable them" button. This will allow the automated process to run.
-
-7. Additionally, enable the workflow under the sidebar menu called "Run main.py" by clicking the "Enable workflow" button.
-
-8. Please note that the song you like on Spotify won't be instantly added to the monthly playlist. The GitHub action runs at an interval of approximately 15 minutes, so there might be a slight delay before the song gets added.
-
-9. Once the setup is complete, you can continue to like songs on Spotify, and they will be automatically added to a new monthly playlist during the next execution of the GitHub action.
-
-10. Profit.
-
-### 🧮 Customization
-
-You have the flexibility to customize the interval at which the GitHub Action runs by modifying the `- cron:` parameter in the `.github/workflows/actions.yml` file. The interval is set using the cron syntax.
-
-Cron syntax consists of five fields representing different time units: minute, hour, day of the month, month, and day of the week. Each field can contain specific values or special characters to define the schedule.
-
-To modify the interval, locate the following line in the `.github/workflows/actions.yml` file:
-
-```yaml
-- cron: '*/15 * * * *'
+```sh
+bun run start
 ```
-> this runs every 15 minutes
 
-The `* * * * *` represents the default configuration, which executes the workflow every minute. You can change this to your desired schedule. Refer to [crontab.guru](https://crontab.guru/). It provides a simple and intuitive way to understand and create cron schedules.
+Then open `http://127.0.0.1:3000`.
 
+From there:
 
-### 💰 Is this FREE?
-Yes.
+1. Sign in with Spotify.
+2. You will be redirected to the dashboard.
+3. MonthlyTracks will continue checking for new liked songs every 5 minutes.
+4. You can also run a manual `Test Sync` from the dashboard to verify what would be picked up immediately.
 
+On startup, the server creates `data/spotify-monthly-saves.db` if needed and ensures the `users` and `sync_history` tables exist.
 
+## How syncing works
+
+- New users default to syncing songs saved since the start of the current UTC month.
+- Returning users resume from their stored `last_checked` timestamp in SQLite.
+- Songs can be grouped into monthly or quarterly playlists.
+- Changing playlist cadence or naming format resets the stored sync checkpoint so future playlists are created using the new settings.
+
+## Tests
+
+```sh
+bun test
+```
+
+Current automated coverage focuses on the core sync and persistence logic:
+
+- playlist name formatting, including quarter and season tokens
+- new-song filtering
+- chronological playlist grouping
+- default sync threshold calculation
+- SQLite schema initialization
+- refresh-token encryption and decryption
+- sync checkpoint persistence and sync history recording
